@@ -1,0 +1,25 @@
+[package]
+name = "esp32c5_firmware"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.100.0"
+publish = false
+
+[workspace]
+
+[dependencies]
+esp-hal = { version = "~1.2.0", features = ["esp32c5"] }
+esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32c5"] }
+
+# Sửa lỗi xung đột feature: tắt default-features và chỉ bật uart
+esp-println = { version = "0.18.0", default-features = false, features = ["esp32c5", "uart"] }
+esp-backtrace = { version = "0.20.0", features = ["esp32c5", "println"] }
+
+critical-section = "1.1.0"
+defmt = "0.3.8"
+defmt-rtt = "0.4.1"
+libm = "0.2.8"
+
+[profile.release]
+opt-level = 3
+lto = "fat"

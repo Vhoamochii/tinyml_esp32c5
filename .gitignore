@@ -1,0 +1,12 @@
+# Bỏ qua các file build của Rust
+target/
+Cargo.lock
+
+# Bỏ qua các file cấu hình của IDE
+.vscode/
+.idea/
+*.swp
+
+# Bỏ qua file log, dữ liệu tạm
+*.log
+*.csv
