@@ -1,0 +1,14 @@
+# Bỏ qua thư mục build của Rust
+target/
+Cargo.lock
+
+# Bỏ qua file tạm của Vim / IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Bỏ qua file rác hệ điều hành
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+[package]
+name = "pc-sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ruv-fann = "0.1.1"
+criterion = "0.5"
+rand = "0.8"
+

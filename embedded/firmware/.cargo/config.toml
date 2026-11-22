@@ -1,0 +1,12 @@
+# Cấu hình chuẩn ESP32-C5 (RISC-V) — chỉ MỘT target duy nhất
+include = ["esp-config.toml"]
+
+[build]
+target = "riscv32imac-unknown-none-elf"
+
+[target.riscv32imac-unknown-none-elf]
+runner = "espflash flash --monitor"
+linker = "rust-lld"
+
+[unstable]
+build-std = ["core"]
