@@ -17,8 +17,8 @@ use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SLOT_SIZE_BYTES};
 use tinyml_core::policy::Retention;
 use tinyml_core::pretrained;
-use tinyml_core::rng::XorShift32;
 use tinyml_core::schedule::Schedule;
+use tinyml_core::testsignal::{FakeSignal, CHECK_WINDOWS};
 use tinyml_core::{selftest, NUM_CLASSES, NUM_FEATURES};
 
 // Bắt buộc với esp-hal 1.x: espflash cần app descriptor để nạp firmware
@@ -27,8 +27,6 @@ esp_bootloader_esp_idf::esp_app_desc!();
 const MEMORY_BYTES: usize = 2000; // M, giống pc-sim
 /// Cấu hình đã khóa trên tập chọn cấu hình (pc-sim): K = 25 ô
 const LOCKED_K: usize = 25;
-/// Số cửa sổ dùng để đo bộ trích xuất (mỗi cửa sổ 16 khối)
-const BENCH_WINDOWS: usize = 4;
 /// Số bước học dùng để đo
 const BENCH_STEPS: usize = 200;
 
@@ -86,40 +84,19 @@ fn stats(v: &mut [u32]) -> (u32, u32, u32) {
     (v[v.len() / 2], p95, v[v.len() - 1])
 }
 
-/// Tín hiệu giả để đo thời gian: nhiễu trắng + tiếng gõ ~76 Hz tắt dần.
-/// Thời gian tính gần như không phụ thuộc giá trị mẫu, chỉ cần tín hiệu có biên độ thực tế.
-struct FakeSignal {
-    rng: XorShift32,
-    n: u32,
-    amp: f32,
-}
-
-impl FakeSignal {
-    fn fill(&mut self, block: &mut [f32; BLOCK_LEN]) {
-        for v in block.iter_mut() {
-            if self.n % 838 == 0 {
-                self.amp = 2.0; // 64000 / 838 ≈ 76,4 cú gõ mỗi giây
-            }
-            self.amp *= 0.97;
-            let ring = if self.n % 2 == 0 { self.amp } else { -self.amp };
-            *v = 0.1 * self.rng.range_f32(-1.0, 1.0) + ring;
-            self.n += 1;
-        }
-    }
-}
-
 /// Đo bộ trích xuất theo từng khối như khi nhận luồng thật. Hạn: mỗi khối 1024 mẫu đến cách nhau 16 ms,
-/// mỗi cửa sổ 16 khối cách nhau 256 ms (đề cương: T = bước trượt / 64000 giây). Trả về z của cửa sổ cuối.
+/// mỗi cửa sổ 16 khối cách nhau 256 ms (đề cương: T = bước trượt / 64000 giây). Trả về z của cửa sổ cuối,
+/// in ra để so với dòng cùng tên của `cargo run --bin selftest` trên Ubuntu (tín hiệu giả dùng chung).
 fn bench_extractor() -> [f32; NUM_FEATURES] {
     let mut extractor = WindowExtractor::new();
-    let mut signal = FakeSignal { rng: XorShift32::new(1), n: 0, amp: 0.0 };
+    let mut signal = FakeSignal::new();
     let mut block = [0.0f32; BLOCK_LEN];
-    let mut normal = [0u32; BENCH_WINDOWS * (BLOCKS_PER_WINDOW - 1)];
-    let mut last = [0u32; BENCH_WINDOWS];
-    let mut window_total = [0u32; BENCH_WINDOWS];
+    let mut normal = [0u32; CHECK_WINDOWS * (BLOCKS_PER_WINDOW - 1)];
+    let mut last = [0u32; CHECK_WINDOWS];
+    let mut window_total = [0u32; CHECK_WINDOWS];
     let mut z = [0.0f32; NUM_FEATURES];
 
-    for w in 0..BENCH_WINDOWS {
+    for w in 0..CHECK_WINDOWS {
         for b in 0..BLOCKS_PER_WINDOW {
             signal.fill(&mut block);
             let t0 = Instant::now();

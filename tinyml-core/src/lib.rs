@@ -14,6 +14,7 @@ pub mod pretrained;
 pub mod rng;
 pub mod schedule;
 pub mod selftest;
+pub mod testsignal;
 
 /// Số đặc trưng bộ trích xuất tạo ra cho mỗi cửa sổ (vectơ z)
 pub const NUM_FEATURES: usize = 16;

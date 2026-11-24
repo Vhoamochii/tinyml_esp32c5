@@ -62,7 +62,8 @@ def extract(x):
              peak / (mean_abs + EPS), rms / (mean_abs + EPS), peak / (clr * clr + EPS)]
 
     rel = np.zeros(4)
-    for blk in x.reshape(BLOCKS, BLOCK):
+    # Chỉ các khối 0, 4, 8, 12 (giống REL_BAND_BLOCK_STRIDE = 4 trong Rust)
+    for blk in x.reshape(BLOCKS, BLOCK)[::4]:
         p = np.abs(np.fft.fft(blk - blk.mean()))**2
         for i in range(4):
             rel[i] += p[REL_EDGES[i]:REL_EDGES[i + 1]].sum()
