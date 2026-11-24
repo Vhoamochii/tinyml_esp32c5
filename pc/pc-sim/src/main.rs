@@ -1,18 +1,25 @@
 // Bộ phát luồng + chấm điểm trên Ubuntu (phía máy tính trong đề cương phương pháp).
 // Máy tính giữ nhãn thật, chỉ trả nhãn theo lịch đã định; phía thiết bị dùng tinyml-core, cùng mã với firmware.
 //
-// DỮ LIỆU GIẢ LẬP: điều kiện "tốc độ cũ" (thay cho N15_M07_F10) rồi "tốc độ mới" (thay cho N09_M07_F10),
-// mỗi lớp là một tâm cụm + nhiễu. Thay bằng bộ đọc Paderborn + bộ trích xuất INT8 khi đã có.
-// Thí nghiệm: r = 0%, 25%, 50% số ô K và đối chứng tắt học lại; hai lịch trả nhãn (rải, theo đợt);
-// hai lịch học (xen kẽ, ưu tiên Q); 5 hạt giống ghép cặp.
+// BƯỚC 4, DỮ LIỆU THẬT: luồng Paderborn trên 3 ổ chọn cấu hình (K004, KI14, KA16).
+//   - Đoạn tốc độ cũ N15_M07_F10, lần đo 1-16, rồi đoạn tốc độ mới N09_M07_F10, lần đo 1-20.
+//   - Trong mỗi đoạn, luân phiên bản ghi giữa ba lớp, giữ thứ tự 15 cửa sổ trong từng bản ghi.
+//   - Lần đo 17-20 ở tốc độ cũ để riêng đo mức quên, không vào luồng học.
+//   - Đặc trưng chuẩn hóa và lớp cuối khởi đầu bằng kết quả pretrain (tinyml-core/src/pretrained.rs).
+// Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
+// Thí nghiệm: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại, mốc "chỉ pretrain" (không cập nhật);
+// hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q); 5 hạt giống ghép cặp.
+//   cargo run --release --bin pc-sim
 
 use std::collections::VecDeque;
 
+use pc_sim::paderborn::{self, Record};
 use tinyml_core::event::{Event, EventKind};
+use tinyml_core::features::normalize;
 use tinyml_core::head::Head;
 use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SlotState, SLOT_SIZE_BYTES};
-use tinyml_core::rng::XorShift32;
+use tinyml_core::pretrained;
 use tinyml_core::schedule::Schedule;
 use tinyml_core::{NUM_CLASSES, NUM_FEATURES};
 
@@ -25,12 +32,10 @@ const Q_MAX: u32 = 8; // Giới hạn Q (tạm)
 const UPDATES_PER_STEP: u32 = 2; // Số lượt học mỗi bước, thay cho giới hạn thời gian mỗi bước (tạm)
 const LEARNING_RATE: f32 = 0.1;
 
-// Luồng giả lập
-const WINDOWS_PER_RECORD: u32 = 32;
-const RECORDS_PER_CLASS: u32 = 10; // Mỗi đoạn tốc độ, luân phiên bản ghi giữa ba lớp
-const HELDOUT_RECORDS_PER_CLASS: u32 = 4; // Thay cho các lần đo 17–20 ở tốc độ cũ, không vào luồng học
-const NOISE: f32 = 0.6;
-const SPEED_SHIFT: f32 = 0.8; // Độ lệch tâm cụm giữa hai tốc độ
+// Luồng Paderborn
+const OLD_STREAM_MEASUREMENTS: (u32, u32) = (1, 16); // Tốc độ cũ, vào luồng học
+const OLD_HELDOUT_MEASUREMENTS: (u32, u32) = (17, 20); // Tốc độ cũ, để riêng đo mức quên
+const NEW_STREAM_MEASUREMENTS: (u32, u32) = (1, 20); // Tốc độ mới
 const LABEL_GROUP: u32 = 9; // Trả nhãn theo từng nhóm chín yêu cầu
 const SLIDING_WINDOWS: usize = 96; // Cửa sổ trượt đo phục hồi (đủ ba lớp)
 const SEEDS: [u32; 5] = [11, 22, 33, 44, 55];
@@ -69,47 +74,45 @@ struct Dataset {
     heldout_old: Vec<(u8, Features)>,
 }
 
-fn sample(rng: &mut XorShift32, centers: &[Features; NUM_CLASSES], class: usize) -> Features {
-    let mut z = [0.0f32; NUM_FEATURES];
-    for (zi, ci) in z.iter_mut().zip(centers[class].iter()) {
-        *zi = ci + rng.range_f32(-NOISE, NOISE);
+fn load(condition: &str, range: (u32, u32)) -> Vec<Record> {
+    match paderborn::load_records(&paderborn::data_dir(), condition, &paderborn::CONFIG_BEARINGS, range.0..=range.1) {
+        Ok(mut records) => {
+            // load_records trả theo từng ổ; xếp lại theo lần đo (sắp xếp ổn định giữ thứ tự ổ K004, KI14, KA16)
+            // để luân phiên bản ghi giữa ba lớp
+            records.sort_by_key(|r| r.measurement);
+            records
+        }
+        Err(e) => {
+            eprintln!("[DEBUG][MAIN][ERROR] {e}");
+            std::process::exit(1);
+        }
     }
-    z
 }
 
-fn make_dataset(seed: u32) -> Dataset {
-    let mut rng = XorShift32::new(seed);
-    let mut old = [[0.0f32; NUM_FEATURES]; NUM_CLASSES];
-    for center in old.iter_mut() {
-        for v in center.iter_mut() {
-            *v = rng.range_f32(-1.0, 1.0);
-        }
-    }
-    let mut new = old;
-    for center in new.iter_mut() {
-        for v in center.iter_mut() {
-            *v += rng.range_f32(-SPEED_SHIFT, SPEED_SHIFT);
-        }
-    }
+/// Các cửa sổ của bản ghi, theo thứ tự thời gian, đã chuẩn hóa bằng hệ số pretrain
+fn normalized_windows(records: &[Record]) -> impl Iterator<Item = (u8, Features)> + '_ {
+    records.iter().flat_map(|r| {
+        r.features.iter().map(move |z| {
+            let mut z = *z;
+            normalize(&mut z, &pretrained::FEATURE_MEAN, &pretrained::FEATURE_STD);
+            (r.class, z)
+        })
+    })
+}
 
-    // Tốc độ cũ trước, tốc độ mới sau; giữ thứ tự cửa sổ trong từng bản ghi
+fn load_dataset() -> Dataset {
+    let old = load(paderborn::OLD_SPEED, OLD_STREAM_MEASUREMENTS);
+    let heldout = load(paderborn::OLD_SPEED, OLD_HELDOUT_MEASUREMENTS);
+    let new = load(paderborn::NEW_SPEED, NEW_STREAM_MEASUREMENTS);
+
+    // Tốc độ cũ trước, tốc độ mới sau
     let mut stream = Vec::new();
-    for (new_speed, centers) in [(false, &old), (true, &new)] {
-        for record in 0..RECORDS_PER_CLASS * NUM_CLASSES as u32 {
-            let class = (record % NUM_CLASSES as u32) as usize;
-            for _ in 0..WINDOWS_PER_RECORD {
-                stream.push(Window { class: class as u8, features: sample(&mut rng, centers, class), new_speed });
-            }
+    for (new_speed, records) in [(false, &old), (true, &new)] {
+        for (class, features) in normalized_windows(records) {
+            stream.push(Window { class, features, new_speed });
         }
     }
-
-    let mut heldout_old = Vec::new();
-    for class in 0..NUM_CLASSES {
-        for _ in 0..HELDOUT_RECORDS_PER_CLASS * WINDOWS_PER_RECORD {
-            heldout_old.push((class as u8, sample(&mut rng, &old, class)));
-        }
-    }
-    Dataset { stream, heldout_old }
+    Dataset { stream, heldout_old: normalized_windows(&heldout).collect() }
 }
 
 /// BA (%) = trung bình đều độ nhạy của ba lớp
@@ -155,6 +158,7 @@ struct RunStats {
 
 fn run(data: &Dataset, labels: LabelSchedule, cfg: Config) -> RunStats {
     let mut learner: Learner<K, NUM_CLASSES> = Learner::new(&cfg);
+    learner.head = pretrained::head(); // Trọng số ban đầu chung cho mọi lần chạy
     let n = data.stream.len() as u32;
 
     let mut st = RunStats::default();
@@ -236,51 +240,65 @@ struct Variant {
     name: &'static str,
     r_protected: u32,
     replay_enabled: bool,
+    learn: bool, // false: tốc độ học 0, giữ nguyên trọng số pretrain (mốc so sánh)
 }
 
 fn main() {
-    println!("[DEBUG][MAIN] DU LIEU GIA LAP (chua co Paderborn) | {} hat giong ghep cap", SEEDS.len());
+    if !pretrained::AVAILABLE {
+        eprintln!("[DEBUG][MAIN][ERROR] Chua co trong so pretrain: chay `cargo run --release --bin pretrain` truoc");
+        std::process::exit(1);
+    }
+    let data = load_dataset();
+    let n_old = data.stream.iter().filter(|w| !w.new_speed).count();
+    println!(
+        "[DEBUG][MAIN] PADERBORN, o cau hinh {:?} | luong: {} cua so N15 + {} cua so N09 | {} cua so N15 de rieng | {} hat giong ghep cap",
+        paderborn::CONFIG_BEARINGS,
+        n_old,
+        data.stream.len() - n_old,
+        data.heldout_old.len(),
+        SEEDS.len()
+    );
     println!(
         "[DEBUG][MAIN] s = {} byte/o, M = {} byte, H = {} byte -> K = {} o | Q toi da {} | {} luot hoc/buoc | lr = {}",
         SLOT_SIZE_BYTES, MEMORY_BYTES, MANAGEMENT_BYTES, K, Q_MAX, UPDATES_PER_STEP, LEARNING_RATE
     );
 
-    let datasets: Vec<Dataset> = SEEDS.iter().map(|&s| make_dataset(s)).collect();
     let variants = [
-        Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false },
-        Variant { name: "r = 0%", r_protected: 0, replay_enabled: true },
-        Variant { name: "r = 25%", r_protected: (K * 25 / 100) as u32, replay_enabled: true },
-        Variant { name: "r = 50%", r_protected: (K * 50 / 100) as u32, replay_enabled: true },
+        Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false },
+        Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false, learn: true },
+        Variant { name: "r = 0%", r_protected: 0, replay_enabled: true, learn: true },
+        Variant { name: "r = 25%", r_protected: (K * 25 / 100) as u32, replay_enabled: true, learn: true },
+        Variant { name: "r = 50%", r_protected: (K * 50 / 100) as u32, replay_enabled: true, learn: true },
     ];
 
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
         println!("\n=== LICH TRA NHAN: {} (trung binh {} hat giong) ===", labels.name(), SEEDS.len());
         println!(
-            "{:<10} | {:<11} | {:>6} | {:>6} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
+            "{:<10} | {:<12} | {:>6} | {:>6} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
             "Lich hoc", "Bien the", "BA moi", "Quen", "Phuc hoi", "Khop", "Bo P", "Bo Q", "Khong o", "Hoc dau", "Hoc lai", "Cho TB"
         );
         for schedule in [Schedule::Interleaved, Schedule::QPriority] {
             for v in &variants {
                 let runs: Vec<RunStats> = SEEDS
                     .iter()
-                    .zip(datasets.iter())
-                    .map(|(&seed, data)| {
+                    .map(|&seed| {
                         let cfg = Config {
                             r_protected: v.r_protected,
                             q_max: Q_MAX,
                             schedule,
                             replay_enabled: v.replay_enabled,
-                            lr: LEARNING_RATE,
+                            lr: if v.learn { LEARNING_RATE } else { 0.0 },
                             seed,
                         };
-                        run(data, labels, cfg)
+                        run(&data, labels, cfg)
                     })
                     .collect();
                 print_row(schedule, v.name, &runs);
             }
         }
     }
-    println!("\nQuen = BA toc do cu ngay truoc khi doi toc do - BA sau thich nghi (diem %).");
+    println!("\nBA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).");
+    println!("Quen = BA N15 de rieng ngay truoc khi doi toc do - BA sau thich nghi (diem %).");
     println!("Phuc hoi = so cua so toc do moi de BA truot ({} cua so) tro ve muc truoc khi doi.", SLIDING_WINDOWS);
 }
 
@@ -301,7 +319,7 @@ fn print_row(schedule: Schedule, variant: &str, runs: &[RunStats]) {
         Schedule::QPriority => "uu tien Q",
     };
     println!(
-        "{:<10} | {:<11} | {:>6.2} | {:>6.2} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
+        "{:<10} | {:<12} | {:>6.2} | {:>6.2} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
         schedule_name,
         variant,
         mean(&|r| r.ba_new),
