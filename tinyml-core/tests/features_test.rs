@@ -86,13 +86,31 @@ fn test_features_envelope_fault_rate() {
     assert_eq!(strongest_envelope_band(&inner), 14, "vong trong N15: {:?}", &inner[10..]);
     assert!(outer[13] > inner[13] + 3.0, "dai 60-100 Hz phai tach hai loi");
 
-    // Ở 900 vòng/phút: vòng ngoài ~45,8 Hz -> dải 35-60 Hz; vòng trong ~74,2 Hz rơi vào cùng dải
-    // với vòng ngoài ở 1500 vòng/phút. Đây là độ lệch khi đổi tốc độ mà bo phải học lại.
+    // Ở 900 vòng/phút: vòng trong ~74,2 Hz rơi vào cùng dải với vòng ngoài ở 1500 vòng/phút.
+    // Đây là độ lệch khi đổi tốc độ mà bo phải học lại.
+    // Vòng ngoài ~45,8 Hz nằm sát 50 Hz nên bin chính bị loại cùng nhiễu điện lưới: dải 35-60 Hz
+    // không còn cao nhất, nhưng vẫn tách rõ vòng ngoài với vòng trong ở cùng tốc độ.
     let outer_slow = features(&impacts(45.8, 1.0));
     let inner_slow = features(&impacts(74.2, 1.0));
-    assert_eq!(strongest_envelope_band(&outer_slow), 12, "vong ngoai N09: {:?}", &outer_slow[10..]);
     assert_eq!(strongest_envelope_band(&inner_slow), 13, "vong trong N09: {:?}", &inner_slow[10..]);
+    assert!(outer_slow[12] > inner_slow[12] + 3.0, "dai 35-60 Hz phai tach hai loi o N09");
     println!("[TEST][FEATURES][Envelope] PASS");
+}
+
+#[test]
+fn test_features_mains_rejected() {
+    println!("[TEST][FEATURES][Mains] Bat dau...");
+    // Tiếng gõ vòng trong 123,6 Hz cộng một thành phần 7 kHz bị điều biến 50 Hz (giả lập nhiễu điện lưới).
+    // Nếu không loại các bin quanh bội số 50 Hz, dải 35-60 Hz sẽ lấn át; có loại thì đỉnh vẫn ở 100-170 Hz.
+    let mut x = impacts(123.6, 1.0);
+    for (n, v) in x.iter_mut().enumerate() {
+        let t = n as f32 / SAMPLE_RATE_HZ;
+        let tau = 2.0 * std::f32::consts::PI;
+        *v += 0.3 * (1.0 + (tau * 50.0 * t).sin()) * (tau * 7000.0 * t).sin();
+    }
+    let z = features(&x);
+    assert_eq!(strongest_envelope_band(&z), 14, "{:?}", &z[10..]);
+    println!("[TEST][FEATURES][Mains] PASS");
 }
 
 #[test]

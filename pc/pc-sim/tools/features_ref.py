@@ -14,6 +14,15 @@ REL_EDGES = [1, 32, 128, 256, 513]
 ENV_EDGES = [3, 6, 9, 16, 26, 44, 77]
 HP_FC = 2000.0
 EPS = 1e-12
+MAINS_HZ = 50
+
+
+def is_mains_bin(k):
+    # Bin phổ bao cách bội số 50 Hz dưới 1,5 bin (tính nguyên: tần số x 1024)
+    f = k * 4000
+    period = MAINS_HZ * 1024
+    r = f % period
+    return min(r, period - r) * 2 < 3 * 4000
 
 
 def biquad_hp():
@@ -64,8 +73,11 @@ def extract(x):
     n = len(env)
     hann = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(n) / n)
     pe = np.abs(np.fft.fft(env * hann))**2
-    total = pe[ENV_EDGES[0]:ENV_EDGES[-1]].mean()
-    env_f = [np.log10(pe[ENV_EDGES[i]:ENV_EDGES[i + 1]].mean() / (total + EPS) + EPS) for i in range(6)]
+    def band_mean(lo, hi):
+        ks = [k for k in range(lo, hi) if not is_mains_bin(k)]
+        return pe[ks].mean()
+    total = band_mean(ENV_EDGES[0], ENV_EDGES[-1])
+    env_f = [np.log10(band_mean(ENV_EDGES[i], ENV_EDGES[i + 1]) / (total + EPS) + EPS) for i in range(6)]
     return np.array(shape + list(rel_f) + env_f)
 
 

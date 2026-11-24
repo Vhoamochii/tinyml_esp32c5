@@ -9,7 +9,8 @@
 //   0-5   hình dạng tín hiệu (có va đập hay không)
 //   6-9   năng lượng dải tần tương đối (tỷ lệ trên tổng năng lượng)
 //   10-15 phổ bao theo DẢI TẦN CỐ ĐỊNH (nhịp va đập), không cần biết tốc độ quay. Khi đổi tốc độ,
-//         nhịp gõ dời sang dải khác: đó là độ lệch mà bo phải tự học lại.
+//         nhịp gõ dời sang dải khác: đó là độ lệch mà bo phải tự học lại. Bỏ các bin quanh bội số
+//         50 Hz (nhiễu điện lưới trong dữ liệu Paderborn).
 
 use crate::NUM_FEATURES;
 
@@ -57,6 +58,20 @@ const REL_BAND_EDGES: [usize; 5] = [1, 32, 128, 256, 513];
 /// Ranh giới 6 dải phổ bao theo bin FFT đường bao (4000 / 1024 = 3,906 Hz/bin):
 /// 10, 20, 35, 60, 100, 170, 300 Hz (làm tròn lên bin kế tiếp)
 const ENV_BAND_EDGES: [usize; 7] = [3, 6, 9, 16, 26, 44, 77];
+/// Tần số điện lưới (Đức). Đỉnh cố định ~50 Hz xuất hiện ở mọi ổ, ở cả hai tốc độ: không phải tín hiệu ổ
+const MAINS_HZ: usize = 50;
+/// Tần số lấy mẫu đường bao (64000 / 16), dạng số nguyên
+const ENV_RATE_HZ: usize = 4000;
+
+/// Bin phổ bao k cách một bội số của 50 Hz dưới 1,5 bin (5,9 Hz): bị loại khỏi đặc trưng.
+/// Tần số bin k là k·4000/1024 Hz; nhân cả hai vế với 1024 để tính hoàn toàn bằng số nguyên.
+/// Trong vùng 10-300 Hz loại 16 bin: 3 bin quanh mỗi bội 50..250 Hz và bin 76 (296,9 Hz).
+fn is_mains_bin(k: usize) -> bool {
+    let freq = k * ENV_RATE_HZ;
+    let period = MAINS_HZ * FFT_LEN;
+    let r = freq % period;
+    r.min(period - r) * 2 < 3 * ENV_RATE_HZ
+}
 
 const EPS: f32 = 1e-12;
 
@@ -217,7 +232,8 @@ impl WindowExtractor {
         let rel = |b: usize| libm::log10f(self.rel_bands[b] / (total + EPS) + EPS);
 
         // --- Nhóm 3: phổ bao. Bỏ trung bình, nhân cửa sổ Hann, FFT, năng lượng trung bình mỗi bin
-        // của từng dải chia cho năng lượng trung bình mỗi bin trên toàn vùng 10-300 Hz ---
+        // của từng dải chia cho năng lượng trung bình mỗi bin trên toàn vùng 10-300 Hz.
+        // Không tính các bin nhiễu điện lưới (is_mains_bin) ---
         let env_mean = self.envelope.iter().sum::<f32>() / ENV_LEN as f32;
         let mut re = [0.0f32; FFT_LEN];
         let mut im = [0.0f32; FFT_LEN];
@@ -227,7 +243,12 @@ impl WindowExtractor {
         }
         fft(&mut re, &mut im);
         let band_mean = |lo: usize, hi: usize| {
-            (lo..hi).map(|k| re[k] * re[k] + im[k] * im[k]).sum::<f32>() / (hi - lo) as f32
+            let (mut sum, mut count) = (0.0f32, 0u32);
+            for k in (lo..hi).filter(|&k| !is_mains_bin(k)) {
+                sum += re[k] * re[k] + im[k] * im[k];
+                count += 1;
+            }
+            sum / count.max(1) as f32
         };
         let env_total = band_mean(ENV_BAND_EDGES[0], ENV_BAND_EDGES[6]);
         let env = |b: usize| {
