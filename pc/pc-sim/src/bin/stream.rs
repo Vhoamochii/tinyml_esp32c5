@@ -30,6 +30,8 @@ const LABEL_GROUP: u32 = 9;
 const WINDOW_BUDGET_US: u32 = 256_000;
 /// Số lần gửi lại tối đa cho một bước trước khi bỏ cuộc
 const MAX_RESENDS: u32 = 5;
+/// Hạn chờ mỗi dòng phản hồi sau khi gửi xong khung (bo cần ~0,2 s để tính)
+const RESPONSE_TIMEOUT: Duration = Duration::from_secs(3);
 /// Luồng kiểm thử, giống TEST_STREAMS trong main.rs
 const STREAM_A: [&str; NUM_CLASSES] = ["K005", "KI18", "KA22"];
 const STREAM_B: [&str; NUM_CLASSES] = ["K006", "KI21", "KA30"];
@@ -170,6 +172,15 @@ fn field(line: &str, key: &str) -> Option<u32> {
     line.split_whitespace().find_map(|t| t.strip_prefix(key)?.strip_prefix('=')?.parse().ok())
 }
 
+/// Phản hồi nguyên vẹn: dòng [STEP] đúng bước và chk khớp các dòng [EVT] cùng phần đầu dòng [STEP]
+fn response_ok(events: &[String], step_line: &str, step: u32) -> bool {
+    let Some((prefix, chk)) = step_line.split_once(protocol::CHK_KEY) else {
+        return false;
+    };
+    field(prefix, "step") == Some(step)
+        && chk.parse::<u32>().ok() == Some(protocol::response_sum(events.iter().map(String::as_str), prefix))
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let arg = |i: usize, default: &str| args.get(i).cloned().unwrap_or_else(|| default.to_string());
@@ -250,7 +261,7 @@ fn main() {
     let (mut ext_us, mut learn_us, mut loop_us, mut wall_us) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut matched_steps, mut correct) = (0usize, 0usize);
     let mut mismatches_shown = 0;
-    let mut resends = 0;
+    let (mut resend_down, mut resend_up) = (0, 0);
 
     for (step, (class, window)) in data.iter().enumerate() {
         let step = step as u32;
@@ -291,30 +302,38 @@ fn main() {
         frame[6..10].copy_from_slice(&expected_sum.to_le_bytes());
         let sent = Instant::now();
 
-        // Kết quả của bo: các dòng [EVT], kết thúc bằng [STEP]. Bo báo khung hỏng thì gửi lại nguyên khung
+        // Kết quả của bo: các dòng [EVT], kết thúc bằng [STEP] ... chk=. Có sự cố thì gửi lại nguyên khung:
+        // bo chưa xử lý thì xử lý, đã xử lý (chỉ phản hồi bị hỏng) thì gửi lại kết quả cũ, không học lại
         let mut got: Vec<String> = Vec::new();
         let mut tries = 0;
         let step_line = 'frame: loop {
             send(&mut reader, &frame);
-            loop {
-                match read_line(&mut reader, Duration::from_secs(10)) {
-                    Some(line) if line.starts_with("[STEP]") => break 'frame line,
-                    Some(line) if line.starts_with("[EVT]") => got.push(line),
-                    Some(line) if line.starts_with(protocol::RESEND_LINE) => {
-                        tries += 1;
-                        resends += 1;
-                        if tries > MAX_RESENDS {
-                            fail(&format!("buoc {step}: da gui lai {MAX_RESENDS} lan van hong"));
+            got.clear();
+            let (down, problem) = loop {
+                match read_line(&mut reader, RESPONSE_TIMEOUT) {
+                    Some(line) if line.starts_with("[STEP]") => {
+                        if response_ok(&got, &line, step) {
+                            break 'frame line;
                         }
-                        println!("[STREAM] gui lai buoc {step} (lan {tries})");
-                        got.clear();
-                        continue 'frame;
+                        break (false, format!("phan hoi hong ({} dong EVT, '{line}')", got.len()));
                     }
+                    Some(line) if line.starts_with("[EVT]") => got.push(line),
+                    Some(line) if line.starts_with(protocol::RESEND_LINE) => break (true, "bo bao khung xuong hong".into()),
                     Some(line) if !line.is_empty() => println!("[BO] {line}"),
                     Some(_) => {}
-                    None => fail(&format!("bo khong tra loi o buoc {step}")),
+                    None => break (false, format!("khong co dong [STEP] ({} dong EVT)", got.len())),
                 }
+            };
+            if down {
+                resend_down += 1;
+            } else {
+                resend_up += 1;
             }
+            tries += 1;
+            if tries > MAX_RESENDS {
+                fail(&format!("buoc {step}: gui lai {MAX_RESENDS} lan van loi ({problem})"));
+            }
+            println!("[STREAM] gui lai buoc {step} (lan {tries}): {problem}");
         };
         wall_us.push(sent.elapsed().as_micros() as u32);
         if field(&step_line, "sum") != Some(expected_sum) {
@@ -352,7 +371,9 @@ fn main() {
     println!("[STREAM] Toan vong tren bo:       trung vi {t50} us | P95 {t95} us | max {tmax} us");
     println!("[STREAM] Qua han (> {WINDOW_BUDGET_US} us): {over}/{steps} ({:.2}%)", over as f32 / n * 100.0);
     println!("[STREAM] Ca truyen UART (PC do, gui khung -> nhan [STEP]): trung vi {w50} us | P95 {w95} us");
-    println!("[STREAM] Khung gui lai do hong tren duong truyen: {resends} lan / {steps} buoc");
+    println!(
+        "[STREAM] Gui lai do duong truyen: {resend_down} lan khung xuong bo hong, {resend_up} lan phan hoi len PC hong / {steps} buoc"
+    );
     if matched_steps != steps {
         std::process::exit(1);
     }

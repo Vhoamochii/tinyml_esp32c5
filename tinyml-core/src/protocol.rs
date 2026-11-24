@@ -8,10 +8,13 @@
 //   CMD_STEP + bước (u32) + số nhãn (u8) + sum (u32) + mỗi nhãn (ID u32, nhãn u8) + WINDOW_LEN mẫu f32
 //            (sum = frame_sum(bước + số nhãn, nhãn + mẫu))
 //                                -> bo kiểm tra sum TRƯỚC khi xử lý. Đúng: trả các dòng [EVT] của bước (gửi SAU
-//                                   khi đo thời gian), rồi "[STEP] step=.. pred=.. ext_us=.. learn_us=.. sum=..".
+//                                   khi đo thời gian), rồi "[STEP] step=.. pred=.. ext_us=.. learn_us=.. sum=.. chk=.."
+//                                   (chk = response_sum, để PC biết phản hồi đến nơi đủ và đúng).
 //                                   Hỏng (thiếu byte quá FRAME_IDLE_MS, lỗi UART, sai sum): bỏ khung, in lý do,
-//                                   chờ đường truyền im rồi trả RESEND_LINE; PC gửi lại nguyên khung. Khung hỏng
-//                                   không chạm vào bộ học, nên gửi lại không làm lệch kết quả
+//                                   chờ đường truyền im rồi trả RESEND_LINE.
+//   Mọi sự cố (khung xuống hỏng, phản hồi lên hỏng hoặc không có) PC đều xử lý bằng cách gửi lại nguyên khung.
+//   Bo chỉ học mỗi bước một lần: khung đúng mà trùng bước vừa xử lý thì gửi lại kết quả cũ, không học lại.
+//   Vì vậy gửi lại không làm lệch kết quả so với Ubuntu
 //   CMD_PING                     -> "[STREAM] OK"
 // Số nguyên và f32 theo thứ tự byte little-endian. Gửi f32 nguyên bản để đặc trưng trên bo khớp từng bit với PC.
 // Không phát theo thời gian thực (UART không đủ băng thông cho 64 KB mỗi 256 ms): PC chờ dòng [STEP] rồi mới
@@ -44,10 +47,14 @@ pub const FRAME_IDLE_MS: u64 = 500;
 /// Dòng bo gửi khi bỏ một khung hỏng và sẵn sàng nhận lại
 pub const RESEND_LINE: &str = "[STREAM][GUI LAI]";
 
-const FNV_OFFSET: u32 = 0x811c_9dc5;
+/// Giá trị đầu của mã FNV-1a 32 bit
+pub const FNV_OFFSET: u32 = 0x811c_9dc5;
 const FNV_PRIME: u32 = 0x0100_0193;
+/// Phần cuối dòng [STEP] mang mã kiểm tra phản hồi
+pub const CHK_KEY: &str = " chk=";
 
-fn fnv_feed(mut h: u32, bytes: &[u8]) -> u32 {
+/// Nạp thêm `bytes` vào mã FNV-1a đang tính dở `h`
+pub fn fnv_feed(mut h: u32, bytes: &[u8]) -> u32 {
     for &b in bytes {
         h ^= b as u32;
         h = h.wrapping_mul(FNV_PRIME);
@@ -58,6 +65,12 @@ fn fnv_feed(mut h: u32, bytes: &[u8]) -> u32 {
 /// Mã kiểm tra FNV-1a 32 bit của các phần nối liền nhau (bằng mã của cả dãy ghép lại)
 pub fn frame_sum(parts: &[&[u8]]) -> u32 {
     parts.iter().fold(FNV_OFFSET, |h, p| fnv_feed(h, p))
+}
+
+/// Mã kiểm tra phản hồi một bước: các dòng [EVT] (mỗi dòng kèm '\n') rồi phần dòng [STEP] đứng trước CHK_KEY
+pub fn response_sum<'a>(events: impl IntoIterator<Item = &'a str>, step_prefix: &str) -> u32 {
+    let h = events.into_iter().fold(FNV_OFFSET, |h, line| fnv_feed(fnv_feed(h, line.as_bytes()), b"\n"));
+    fnv_feed(h, step_prefix.as_bytes())
 }
 
 /// Dấu vân tay của trọng số pretrain đang được biên dịch vào (hệ số chuẩn hóa, W, b).

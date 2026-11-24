@@ -197,14 +197,21 @@ fn busy_wait_us(us: u64) {
     while t0.elapsed().as_micros() < us {}
 }
 
-/// Ghi hết dữ liệu ra UART (`write` có thể ghi ít hơn độ dài được đưa)
+/// Số byte tối đa đưa vào FIFO phát (128 byte) trước khi chờ phát xong
+const TX_CHUNK: usize = 64;
+
+/// Ghi hết dữ liệu ra UART, mỗi lần tối đa TX_CHUNK byte rồi chờ phát xong, để FIFO phát không bao giờ đầy.
+/// Lý do: ghi dồn phản hồi dài hơn 128 byte ở 921600 baud từng làm mất đuôi dòng [STEP] (bước 2, 5e)
 fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
-    let mut sent = 0;
-    while sent < data.len() {
-        match uart.write(&data[sent..]) {
-            Ok(n) => sent += n,
-            Err(_) => return,
+    for chunk in data.chunks(TX_CHUNK) {
+        let mut sent = 0;
+        while sent < chunk.len() {
+            match uart.write(&chunk[sent..]) {
+                Ok(n) => sent += n,
+                Err(_) => return,
+            }
         }
+        let _ = uart.flush();
     }
 }
 
@@ -258,6 +265,50 @@ impl core::fmt::Write for UartText<'_, '_> {
     }
 }
 
+/// Như UartText, đồng thời tính mã FNV-1a của mọi chữ đã ghi
+struct HashedText<'a, 'd> {
+    uart: &'a mut Uart<'d, Blocking>,
+    h: u32,
+}
+
+impl core::fmt::Write for HashedText<'_, '_> {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.h = protocol::fnv_feed(self.h, s.as_bytes());
+        uart_write_all(self.uart, s.as_bytes());
+        Ok(())
+    }
+}
+
+/// Kết quả một bước, giữ lại để gửi lại nguyên văn nếu phản hồi bị hỏng trên đường lên PC
+#[derive(Clone, Copy)]
+struct StepResult {
+    step: u32,
+    pred: u8,
+    ext_us: u32,
+    learn_us: u32,
+    sum: u32,
+    count: usize,
+    overflow: bool,
+}
+
+/// Gửi các dòng [EVT] của bước rồi dòng "[STEP] ... chk=..", chk = protocol::response_sum của phần đã gửi
+fn send_result(uart: &mut Uart<'_, Blocking>, r: &StepResult, events: &[Event]) {
+    if r.overflow {
+        uart_write_all(uart, b"[STREAM][WARN] tran bo dem su kien\n");
+    }
+    let mut out = HashedText { uart, h: protocol::FNV_OFFSET };
+    for e in &events[..r.count] {
+        let _ = writeln!(out, "{}", e);
+    }
+    let _ = write!(
+        out,
+        "[STEP] step={} pred={} ext_us={} learn_us={} sum={}",
+        r.step, r.pred, r.ext_us, r.learn_us, r.sum
+    );
+    let chk = out.h;
+    let _ = writeln!(UartText(out.uart), "{}{}", protocol::CHK_KEY, chk);
+}
+
 /// Nhận luồng từ PC theo protocol.rs: bắt tay, đổi tốc độ, rồi xử lý lệnh CONFIG / STEP / PING mãi mãi
 fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
     // Bắt tay ở BOOT_BAUD: chờ CMD_GO, trả lời, rồi đổi sang FAST_BAUD.
@@ -291,6 +342,8 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
     let mut samples = [0u8; protocol::SAMPLE_BYTES];
     let mut label_bytes = [0u8; protocol::MAX_LABELS_PER_STEP * 5];
     let mut events = [Event { step: 0, id: 0, kind: EventKind::Admitted }; MAX_EVENTS_PER_STEP];
+    // Bước vừa xử lý xong (sự kiện của nó vẫn nằm trong `events`)
+    let mut last: Option<StepResult> = None;
 
     loop {
         // Chờ byte lệnh không giới hạn thời gian (hạn chờ chỉ áp dụng bên trong một khung)
@@ -310,6 +363,7 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                         let mut l = Learner::new(&cfg);
                         l.head = pretrained::head();
                         learner = Some((l, updates));
+                        last = None;
                         let _ = writeln!(
                             UartText(&mut uart),
                             "[STREAM] CONFIG OK K={} H={} W=0x{:08x} pretrain={}",
@@ -348,6 +402,11 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                 if sum != want_sum {
                     let _ = writeln!(UartText(&mut uart), "[STREAM][LOI] buoc {} sai ma kiem tra: nhan {} / PC {}", step, sum, want_sum);
                     request_resend(&mut uart);
+                    continue;
+                }
+                // PC gửi lại khung của bước vừa xử lý (vì phản hồi bị hỏng): không học lại, gửi lại kết quả cũ
+                if let Some(r) = last.filter(|r| r.step == step) {
+                    send_result(&mut uart, &r, &events);
                     continue;
                 }
                 let Some((learner, updates)) = learner.as_mut() else {
@@ -395,22 +454,10 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                 };
                 let learn_us = micros_since(t1);
 
-                // Gửi kết quả sau khi đã đo xong
-                for e in &events[..count] {
-                    let _ = writeln!(UartText(&mut uart), "{}", e);
-                }
-                if overflow {
-                    uart_write_all(&mut uart, b"[STREAM][WARN] tran bo dem su kien\n");
-                }
-                let _ = writeln!(
-                    UartText(&mut uart),
-                    "[STEP] step={} pred={} ext_us={} learn_us={} sum={}",
-                    step,
-                    pred,
-                    ext_us,
-                    learn_us,
-                    sum
-                );
+                // Gửi kết quả sau khi đã đo xong; giữ lại để gửi lại nếu PC xin
+                let r = StepResult { step, pred, ext_us, learn_us, sum, count, overflow };
+                last = Some(r);
+                send_result(&mut uart, &r, &events);
             }
             protocol::CMD_GO => {} // CMD_GO thừa từ lúc bắt tay
             other => {

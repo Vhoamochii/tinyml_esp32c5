@@ -259,6 +259,16 @@ fn test_frame_sum_parts_equal_whole() {
 }
 
 #[test]
+fn test_response_sum_is_sum_of_text() {
+    // Bo tính mã trong lúc ghi từng mẩu chữ; PC tính lại từ các dòng đã bỏ ký tự xuống dòng
+    let text = "[EVT] step=2 id=2 PRED 2\n[EVT] step=2 id=2 ADMIT_P\n[STEP] step=2 pred=2";
+    let lines = ["[EVT] step=2 id=2 PRED 2", "[EVT] step=2 id=2 ADMIT_P"];
+    assert_eq!(protocol::response_sum(lines, "[STEP] step=2 pred=2"), protocol::frame_sum(&[text.as_bytes()]));
+    assert_ne!(protocol::response_sum(lines, "[STEP] step=2 pred=1"), protocol::frame_sum(&[text.as_bytes()]));
+    assert_ne!(protocol::response_sum(lines[..1].iter().copied(), "[STEP] step=2 pred=2"), protocol::frame_sum(&[text.as_bytes()]));
+}
+
+#[test]
 fn test_protocol_config_roundtrip() {
     println!("[TEST][PROTOCOL][Config] Bat dau...");
     let cfg = Config {
