@@ -3,6 +3,7 @@ use tinyml_core::event::{Event, EventKind};
 use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SlotState, SLOT_SIZE_BYTES};
 use tinyml_core::policy::Retention;
+use tinyml_core::protocol;
 use tinyml_core::rng::XorShift32;
 use tinyml_core::schedule::Schedule;
 use tinyml_core::{selftest, NUM_CLASSES, NUM_FEATURES};
@@ -243,6 +244,30 @@ fn test_retention_fifo_vs_reservoir() {
     let old = reservoir.iter().filter(|&&id| id < 500).count();
     assert!(old >= 5, "reservoir chi giu {old} mau cu: {reservoir:?}");
     println!("[TEST][POLICY][Retention] fifo {fifo:?} | reservoir {reservoir:?} -> PASS");
+}
+
+#[test]
+fn test_protocol_config_roundtrip() {
+    println!("[TEST][PROTOCOL][Config] Bat dau...");
+    let cfg = Config {
+        r_protected: 6,
+        q_max: 9,
+        schedule: Schedule::QPriority,
+        replay_enabled: true,
+        lr: 0.1,
+        seed: 55,
+        retention: Retention::Reservoir,
+    };
+    let (back, updates) = protocol::decode_config(&protocol::encode_config(&cfg, 2)).expect("giai ma duoc");
+    assert_eq!(updates, 2);
+    assert_eq!((back.r_protected, back.q_max, back.seed, back.replay_enabled), (6, 9, 55, true));
+    assert_eq!(back.lr.to_bits(), cfg.lr.to_bits());
+    assert!(matches!(back.schedule, Schedule::QPriority));
+    assert_eq!(back.retention, Retention::Reservoir);
+    let mut bad = protocol::encode_config(&cfg, 2);
+    bad[0] = 7;
+    assert!(protocol::decode_config(&bad).is_none(), "ma luat R sai phai bi tu choi");
+    println!("[TEST][PROTOCOL][Config] PASS");
 }
 
 #[test]

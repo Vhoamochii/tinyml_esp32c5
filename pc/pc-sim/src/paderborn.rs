@@ -112,3 +112,31 @@ pub fn load_records(
     }
     Ok(out)
 }
+
+/// Một bản ghi giữ nguyên tín hiệu các cửa sổ (để phát xuống bo, bước 5e)
+pub struct RawRecord {
+    pub bearing: &'static str,
+    pub class: u8,
+    pub measurement: u32,
+    pub windows: Vec<Vec<f32>>, // WINDOWS_PER_RECORD cửa sổ WINDOW_LEN mẫu, theo thứ tự thời gian
+}
+
+/// Giống load_records nhưng giữ tín hiệu thô thay cho đặc trưng
+pub fn load_raw_records(
+    root: &Path,
+    condition: &str,
+    bearings: &[&'static str],
+    measurements: impl IntoIterator<Item = u32> + Clone,
+) -> Result<Vec<RawRecord>, String> {
+    let mut out = Vec::new();
+    for &bearing in bearings {
+        let class = class_of(bearing).ok_or_else(|| format!("ma o {bearing} khong thuoc 3 lop"))?;
+        for measurement in measurements.clone() {
+            let signal = read_vibration(&measurement_path(root, condition, bearing, measurement))?;
+            let windows = windows(&signal, WINDOWS_PER_RECORD).into_iter().map(|w| w.to_vec()).collect();
+            out.push(RawRecord { bearing, class, measurement, windows });
+        }
+        println!("[LOAD] {condition} {bearing}: tin hieu tho");
+    }
+    Ok(out)
+}

@@ -1,22 +1,28 @@
 // Điểm vào firmware ESP32-C5 (no_std, không heap).
 // 1. Chạy hai phép thử bắt buộc của đề cương (XOR và ghép nhãn qua ranh giới epoch) bằng tinyml-core,
 //    cùng mã với `cargo run --bin selftest` trên Ubuntu. Log in qua UART phải khớp từng dòng với Ubuntu.
-// 2. Bước 5, đo thời gian trên bo (chưa có UART nhận dữ liệu): bộ trích xuất 16 đặc trưng trên tín hiệu
-//    giả tự sinh, và một bước học đầy đủ với cấu hình đã khóa (K = 25, r = 0%, ưu tiên Q, lr = 0,2,
-//    Case 3 reservoir là case nặng nhất vì phải băm ID khi thu hồi). Ghi log UART nằm ngoài khoảng đo.
+// 2. Bước 5, đo thời gian trên bo: bộ trích xuất 16 đặc trưng trên tín hiệu giả dùng chung với Ubuntu,
+//    và một bước học đầy đủ với cấu hình đã khóa (K = 25, r = 0%, ưu tiên Q; Case 3 reservoir là case
+//    nặng nhất vì phải băm ID khi thu hồi). Ghi log UART nằm ngoài khoảng đo.
+// 3. Bước 5e, nhận luồng thật từ PC qua UART0 (GPIO11 TX, GPIO12 RX, cổng /dev/ttyUSB0) theo giao thức
+//    tinyml-core/src/protocol.rs; PC chạy `cargo run --release --bin stream` trong pc/pc-sim.
 #![no_std]
 #![no_main]
 
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
+use core::fmt::Write as _;
 use esp_hal::time::Instant;
+use esp_hal::uart::{Config as UartConfig, Uart};
+use esp_hal::Blocking;
 use esp_println::println;
-use tinyml_core::event::Event;
+use tinyml_core::event::{Event, EventKind};
 use tinyml_core::features::{normalize, WindowExtractor, BLOCKS_PER_WINDOW, BLOCK_LEN, SAMPLE_RATE_HZ};
 use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SLOT_SIZE_BYTES};
 use tinyml_core::policy::Retention;
 use tinyml_core::pretrained;
+use tinyml_core::protocol;
 use tinyml_core::schedule::Schedule;
 use tinyml_core::testsignal::{FakeSignal, CHECK_WINDOWS};
 use tinyml_core::{selftest, NUM_CLASSES, NUM_FEATURES};
@@ -29,6 +35,8 @@ const MEMORY_BYTES: usize = 2000; // M, giống pc-sim
 const LOCKED_K: usize = 25;
 /// Số bước học dùng để đo
 const BENCH_STEPS: usize = 200;
+/// Số sự kiện tối đa giữ lại trong một bước của luồng (gửi sau khi đo thời gian)
+const MAX_EVENTS_PER_STEP: usize = 64;
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
@@ -39,7 +47,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[main]
 fn main() -> ! {
     // Chạy CPU ở xung nhịp cao nhất; đề cương yêu cầu ghi xung nhịp bo kèm số đo thời gian
-    let _peripherals = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
+    let peripherals = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
     println!(
         "[FW][BOOT] s = {} byte/o, M = {} byte, H = {} byte -> K = {} o | CPU = CpuClock::max()",
         SLOT_SIZE_BYTES,
@@ -69,7 +77,14 @@ fn main() -> ! {
     bench_learner(z);
     println!("[BENCH] XONG");
 
-    loop {}
+    // Bước 5e: nhận luồng từ PC. Đợi chữ cuối kịp ra khỏi UART trước khi driver Uart lấy UART0
+    println!("[STREAM] Cho PC: thoat espflash monitor roi chay `cargo run --release --bin stream` trong pc/pc-sim");
+    busy_wait_us(50_000);
+    let uart = Uart::new(peripherals.UART0, UartConfig::default().with_baudrate(protocol::BOOT_BAUD))
+        .unwrap()
+        .with_rx(peripherals.GPIO12)
+        .with_tx(peripherals.GPIO11);
+    stream_mode(uart)
 }
 
 /// Số µs từ `t0` đến giờ
@@ -147,7 +162,7 @@ fn bench_learner(z: [f32; NUM_FEATURES]) {
         q_max: 9,
         schedule: Schedule::QPriority,
         replay_enabled: true,
-        lr: 0.2,
+        lr: 0.1,
         seed: 11,
         retention: Retention::Reservoir,
     };
@@ -174,4 +189,163 @@ fn bench_learner(z: [f32; NUM_FEATURES]) {
         "[BENCH][LEARN] 1 buoc (chuan hoa + du doan + cap o + nhan + 2 luot hoc), {} buoc: trung vi {} us | P95 {} us | max {} us",
         BENCH_STEPS, med, p95, max
     );
+}
+
+/// Chờ bận `us` micro giây
+fn busy_wait_us(us: u64) {
+    let t0 = Instant::now();
+    while t0.elapsed().as_micros() < us {}
+}
+
+/// Ghi hết dữ liệu ra UART (`write` có thể ghi ít hơn độ dài được đưa)
+fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
+    let mut sent = 0;
+    while sent < data.len() {
+        match uart.write(&data[sent..]) {
+            Ok(n) => sent += n,
+            Err(_) => return,
+        }
+    }
+}
+
+/// Đọc đủ `buf.len()` byte (chặn tới khi có dữ liệu); false nếu UART báo lỗi
+fn uart_read_exact(uart: &mut Uart<'_, Blocking>, buf: &mut [u8]) -> bool {
+    let mut filled = 0;
+    while filled < buf.len() {
+        match uart.read(&mut buf[filled..]) {
+            Ok(n) => filled += n,
+            Err(_) => return false,
+        }
+    }
+    true
+}
+
+/// Cho phép dùng writeln! trên UART
+struct UartText<'a, 'd>(&'a mut Uart<'d, Blocking>);
+
+impl core::fmt::Write for UartText<'_, '_> {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        uart_write_all(self.0, s.as_bytes());
+        Ok(())
+    }
+}
+
+/// Nhận luồng từ PC theo protocol.rs: bắt tay, đổi tốc độ, rồi xử lý lệnh CONFIG / STEP / PING mãi mãi
+fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
+    // Bắt tay ở BOOT_BAUD: chờ CMD_GO, trả lời, rồi đổi sang FAST_BAUD
+    let mut byte = [0u8; 1];
+    while !(uart_read_exact(&mut uart, &mut byte) && byte[0] == protocol::CMD_GO) {}
+    let _ = writeln!(UartText(&mut uart), "[STREAM] BAUD {}", protocol::FAST_BAUD);
+    let _ = uart.flush();
+    busy_wait_us(20_000);
+    uart.apply_config(&UartConfig::default().with_baudrate(protocol::FAST_BAUD)).unwrap();
+
+    let mut extractor = WindowExtractor::new();
+    let mut learner: Option<(Learner<LOCKED_K, NUM_CLASSES>, u32)> = None;
+    let mut samples = [0u8; protocol::SAMPLE_BYTES];
+    let mut label_bytes = [0u8; protocol::MAX_LABELS_PER_STEP * 5];
+    let mut events = [Event { step: 0, id: 0, kind: EventKind::Admitted }; MAX_EVENTS_PER_STEP];
+
+    loop {
+        if !uart_read_exact(&mut uart, &mut byte) {
+            continue;
+        }
+        match byte[0] {
+            protocol::CMD_PING => uart_write_all(&mut uart, b"[STREAM] OK\n"),
+            protocol::CMD_CONFIG => {
+                let mut raw = [0u8; protocol::CONFIG_LEN];
+                if !uart_read_exact(&mut uart, &mut raw) {
+                    continue;
+                }
+                match protocol::decode_config(&raw) {
+                    Some((cfg, updates)) => {
+                        let mut l = Learner::new(&cfg);
+                        l.head = pretrained::head();
+                        learner = Some((l, updates));
+                        let _ = writeln!(UartText(&mut uart), "[STREAM] CONFIG OK K={} H={} ", LOCKED_K, MANAGEMENT_BYTES);
+                    }
+                    None => uart_write_all(&mut uart, b"[STREAM] CONFIG LOI\n"),
+                }
+            }
+            protocol::CMD_STEP => {
+                // Đầu khung: bước (u32) + số nhãn (u8), rồi các nhãn, rồi mẫu
+                let mut head = [0u8; 5];
+                if !uart_read_exact(&mut uart, &mut head) {
+                    continue;
+                }
+                let step = u32::from_le_bytes([head[0], head[1], head[2], head[3]]);
+                let n_labels = head[4] as usize;
+                if n_labels > protocol::MAX_LABELS_PER_STEP {
+                    uart_write_all(&mut uart, b"[STREAM] QUA NHIEU NHAN\n");
+                    continue;
+                }
+                if !uart_read_exact(&mut uart, &mut label_bytes[..n_labels * 5])
+                    || !uart_read_exact(&mut uart, &mut samples)
+                {
+                    continue;
+                }
+                let Some((learner, updates)) = learner.as_mut() else {
+                    uart_write_all(&mut uart, b"[STREAM] CHUA CO CONFIG\n");
+                    continue;
+                };
+
+                // Trích đặc trưng theo khối; chỉ tính thời gian push_block (đổi byte -> f32 nằm ngoài khoảng đo)
+                let mut ext_us = 0u32;
+                let mut z = [0.0f32; NUM_FEATURES];
+                for chunk in samples.chunks_exact(BLOCK_LEN * 4) {
+                    let mut block = [0.0f32; BLOCK_LEN];
+                    for (v, b) in block.iter_mut().zip(chunk.chunks_exact(4)) {
+                        *v = f32::from_le_bytes([b[0], b[1], b[2], b[3]]);
+                    }
+                    let t0 = Instant::now();
+                    let result = extractor.push_block(&block);
+                    ext_us += micros_since(t0);
+                    if let Some(features) = result {
+                        z = features;
+                    }
+                }
+
+                // Học: chuẩn hóa + dự đoán + cấp ô + nhãn đến hạn + học; sự kiện gom vào bộ đệm
+                let mut count = 0usize;
+                let mut overflow = false;
+                let t1 = Instant::now();
+                let pred = {
+                    let mut log = |e: Event| {
+                        if count < events.len() {
+                            events[count] = e;
+                            count += 1;
+                        } else {
+                            overflow = true;
+                        }
+                    };
+                    normalize(&mut z, &pretrained::FEATURE_MEAN, &pretrained::FEATURE_STD);
+                    let pred = learner.on_window(step, step, z, &mut log);
+                    for lb in label_bytes[..n_labels * 5].chunks_exact(5) {
+                        let id = u32::from_le_bytes([lb[0], lb[1], lb[2], lb[3]]);
+                        learner.on_label(step, id, lb[4], &mut log);
+                    }
+                    learner.train(step, *updates, &mut log);
+                    pred
+                };
+                let learn_us = micros_since(t1);
+
+                // Gửi kết quả sau khi đã đo xong
+                for e in &events[..count] {
+                    let _ = writeln!(UartText(&mut uart), "{}", e);
+                }
+                if overflow {
+                    uart_write_all(&mut uart, b"[STREAM][WARN] tran bo dem su kien\n");
+                }
+                let _ = writeln!(
+                    UartText(&mut uart),
+                    "[STEP] step={} pred={} ext_us={} learn_us={}",
+                    step,
+                    pred,
+                    ext_us,
+                    learn_us
+                );
+            }
+            _ => {} // Bỏ qua byte lạ (ví dụ CMD_GO thừa từ lúc bắt tay)
+        }
+    }
 }

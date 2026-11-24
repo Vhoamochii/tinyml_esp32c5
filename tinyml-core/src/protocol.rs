@@ -1,0 +1,79 @@
+// Giao thức UART giữa Ubuntu (pc-sim, chương trình `stream`) và ESP32-C5 (firmware), bước 5e.
+// Hai bên dùng chung module này để khung dữ liệu luôn khớp.
+//
+// Bắt tay ở BOOT_BAUD: PC gửi CMD_GO, bo trả "[STREAM] BAUD 921600" rồi đổi sang FAST_BAUD;
+// PC đổi theo và gửi CMD_PING, bo trả "[STREAM] OK". Sau đó:
+//   CMD_CONFIG + CONFIG_LEN byte -> bo tạo lại Learner (bộ nhớ rỗng, trọng số pretrain),
+//                                   trả "[STREAM] CONFIG OK K=.. H=.."
+//   CMD_STEP + bước (u32) + số nhãn (u8) + mỗi nhãn (ID u32, nhãn u8) + WINDOW_LEN mẫu f32
+//                                -> bo trả các dòng [EVT] của bước (gửi SAU khi đo thời gian),
+//                                   rồi dòng "[STEP] step=.. pred=.. ext_us=.. learn_us=.."
+//   CMD_PING                     -> "[STREAM] OK"
+// Số nguyên và f32 theo thứ tự byte little-endian. Gửi f32 nguyên bản để đặc trưng trên bo khớp từng bit với PC.
+// Không phát theo thời gian thực (UART không đủ băng thông cho 64 KB mỗi 256 ms): PC chờ dòng [STEP] rồi mới
+// gửi bước tiếp; bo tự đo thời gian tính, thời gian truyền được PC ghi riêng.
+
+use crate::features::WINDOW_LEN;
+use crate::learner::Config;
+use crate::policy::Retention;
+use crate::schedule::Schedule;
+
+pub const BOOT_BAUD: u32 = 115_200;
+pub const FAST_BAUD: u32 = 921_600;
+
+pub const CMD_GO: u8 = b'G';
+pub const CMD_PING: u8 = b'P';
+pub const CMD_CONFIG: u8 = b'C';
+pub const CMD_STEP: u8 = b'S';
+
+/// Độ dài phần cấu hình sau CMD_CONFIG
+pub const CONFIG_LEN: usize = 24;
+/// Số nhãn tối đa trong một khung bước
+pub const MAX_LABELS_PER_STEP: usize = 32;
+/// Số byte mẫu của một cửa sổ
+pub const SAMPLE_BYTES: usize = WINDOW_LEN * 4;
+
+/// Mã hóa cấu hình bộ học và số lượt học mỗi bước
+pub fn encode_config(cfg: &Config, updates_per_step: u32) -> [u8; CONFIG_LEN] {
+    let mut out = [0u8; CONFIG_LEN];
+    out[0] = match cfg.retention {
+        Retention::Fifo => 0,
+        Retention::Reservoir => 1,
+    };
+    out[1] = cfg.replay_enabled as u8;
+    out[2] = match cfg.schedule {
+        Schedule::Interleaved => 0,
+        Schedule::QPriority => 1,
+    };
+    out[4..8].copy_from_slice(&cfg.r_protected.to_le_bytes());
+    out[8..12].copy_from_slice(&cfg.q_max.to_le_bytes());
+    out[12..16].copy_from_slice(&cfg.lr.to_le_bytes());
+    out[16..20].copy_from_slice(&cfg.seed.to_le_bytes());
+    out[20..24].copy_from_slice(&updates_per_step.to_le_bytes());
+    out
+}
+
+/// Giải mã cấu hình; None nếu mã luật R hoặc lịch học không hợp lệ
+pub fn decode_config(raw: &[u8; CONFIG_LEN]) -> Option<(Config, u32)> {
+    let u32_at = |i: usize| u32::from_le_bytes([raw[i], raw[i + 1], raw[i + 2], raw[i + 3]]);
+    let retention = match raw[0] {
+        0 => Retention::Fifo,
+        1 => Retention::Reservoir,
+        _ => return None,
+    };
+    let schedule = match raw[2] {
+        0 => Schedule::Interleaved,
+        1 => Schedule::QPriority,
+        _ => return None,
+    };
+    let cfg = Config {
+        r_protected: u32_at(4),
+        q_max: u32_at(8),
+        schedule,
+        replay_enabled: raw[1] != 0,
+        lr: f32::from_bits(u32_at(12)),
+        seed: u32_at(16),
+        retention,
+    };
+    Some((cfg, u32_at(20)))
+}
