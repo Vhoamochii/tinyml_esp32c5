@@ -19,6 +19,8 @@ const EPOCHS: usize = 50;
 const LEARNING_RATE: f32 = 0.05;
 const SEED: u32 = 2026;
 const CLASS_NAMES: [&str; NUM_CLASSES] = ["khoe", "vong trong", "vong ngoai"];
+/// Vị trí đặc trưng phổ bao đầu tiên trong vectơ z (6 đặc trưng cuối)
+const ENV_FIRST: usize = 10;
 
 type Features = [f32; NUM_FEATURES];
 type Samples = Vec<(Features, u8)>;
@@ -160,6 +162,30 @@ fn print_eval(name: &str, head: &Head<NUM_CLASSES>, records: &[Record], mean: &F
     }
 }
 
+/// Trung bình 6 đặc trưng phổ bao (chưa chuẩn hóa) theo từng ổ: ổ nào có đỉnh nhịp gõ ở dải nào.
+/// Giá trị > 0 nghĩa là dải đó cao hơn mức trung bình của vùng 10-300 Hz.
+fn print_envelope_by_bearing(name: &str, records: &[Record]) {
+    println!("[ENV] {name}");
+    let mut bearings: Vec<(&'static str, u8)> = Vec::new();
+    for r in records {
+        if !bearings.iter().any(|b| b.0 == r.bearing) {
+            bearings.push((r.bearing, r.class));
+        }
+    }
+    for (bearing, class) in bearings {
+        let mut sums = [0.0f64; NUM_FEATURES - ENV_FIRST];
+        let mut n = 0u32;
+        for z in records.iter().filter(|r| r.bearing == bearing).flat_map(|r| r.features.iter()) {
+            for (s, v) in sums.iter_mut().zip(&z[ENV_FIRST..]) {
+                *s += *v as f64;
+            }
+            n += 1;
+        }
+        let cols: String = sums.iter().map(|s| format!("{:>10.2}", s / n.max(1) as f64)).collect();
+        println!("[ENV]   {bearing} ({:<10}){cols}", CLASS_NAMES[class as usize]);
+    }
+}
+
 /// Ghi hệ số chuẩn hóa và trọng số thành mã Rust (định dạng {:?} của f32 đọc lại được chính xác)
 fn write_pretrained(head: &Head<NUM_CLASSES>, mean: &Features, std: &Features) -> std::io::Result<std::path::PathBuf> {
     let mut s = String::new();
@@ -230,6 +256,15 @@ fn main() {
         let m: Vec<f64> = (0..NUM_CLASSES).map(|c| sums[c] / counts[c].max(1) as f64).collect();
         println!("[FEAT] {name:<18} {:>10.3} {:>10.3} {:>10.3}", m[0], m[1], m[2]);
     }
+
+    // Phổ bao theo từng ổ: vòng ngoài N15 phải có đỉnh ở 60-100 Hz (BPFO ~76 Hz), N09 ở 35-60 Hz (~46 Hz)
+    let header: String = FEATURE_NAMES[ENV_FIRST..].iter().map(|f| format!("{:>10}", f.trim_start_matches("env_"))).collect();
+    println!("
+[ENV] Trung binh dac trung pho bao (chua chuan hoa, > 0 = cao hon muc trung binh) theo tung o:");
+    println!("[ENV]   {:<17}{header}", "o");
+    print_envelope_by_bearing("O hoc, N15, lan do 1-16", &train);
+    print_envelope_by_bearing("O cau hinh, N15", &config_old);
+    print_envelope_by_bearing("O cau hinh, N09", &config_new);
 
     // Kiểm tra chéo bỏ-một-ổ: học trên 7 ổ (chuẩn hóa cũng chỉ từ 7 ổ đó), chấm ổ thứ 8 chưa từng thấy
     println!("\n[LOBO] Kiem tra cheo bo-mot-o: hoc {} o (N15, lan do 1-16), cham o bi bo ra (N15, lan do 1-20)", paderborn::TRAIN_BEARINGS.len() - 1);

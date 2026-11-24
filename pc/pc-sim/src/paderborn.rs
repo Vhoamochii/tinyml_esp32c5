@@ -18,10 +18,8 @@ pub const MEASUREMENTS: u32 = 20;
 /// Số cửa sổ lấy từ mỗi bản ghi: toàn bộ 15 cửa sổ 256 ms không chồng nhau của bản ghi 4 giây
 pub const WINDOWS_PER_RECORD: usize = 15;
 
-/// Bảng 1 của đề cương: phân tập theo ổ vật lý.
-/// LỆCH ĐỀ CƯƠNG (đang thử): thêm KA07 vào tập học để lớp vòng ngoài có 3 ổ như hai lớp kia.
-/// KA07 là hư hỏng NHÂN TẠO (khoan lỗ vòng ngoài); các ổ hỏng khác trong Bảng 1 đều là hư hỏng thật.
-pub const TRAIN_BEARINGS: [&str; 9] = ["K001", "K002", "K003", "KI04", "KI16", "KI17", "KA04", "KA15", "KA07"];
+/// Bảng 1 của đề cương: phân tập theo ổ vật lý
+pub const TRAIN_BEARINGS: [&str; 8] = ["K001", "K002", "K003", "KI04", "KI16", "KI17", "KA04", "KA15"];
 pub const CONFIG_BEARINGS: [&str; 3] = ["K004", "KI14", "KA16"];
 pub const TEST_BEARINGS: [&str; 6] = ["K005", "K006", "KI18", "KI21", "KA22", "KA30"];
 
