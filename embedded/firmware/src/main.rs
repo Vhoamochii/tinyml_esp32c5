@@ -232,9 +232,27 @@ impl core::fmt::Write for UartText<'_, '_> {
 
 /// Nhận luồng từ PC theo protocol.rs: bắt tay, đổi tốc độ, rồi xử lý lệnh CONFIG / STEP / PING mãi mãi
 fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
-    // Bắt tay ở BOOT_BAUD: chờ CMD_GO, trả lời, rồi đổi sang FAST_BAUD
+    // Bắt tay ở BOOT_BAUD: chờ CMD_GO, trả lời, rồi đổi sang FAST_BAUD.
+    // Dòng xác nhận + nhịp "đang chờ" mỗi 2 giây cho biết chiều bo -> PC hoạt động; byte lạ được in ra
+    // để biết chiều PC -> bo hoạt động (có thể gõ G thẳng trong espflash monitor để thử)
+    uart_write_all(&mut uart, b"[STREAM] UART0 san sang o 115200 baud, cho lenh G tu PC
+");
     let mut byte = [0u8; 1];
-    while !(uart_read_exact(&mut uart, &mut byte) && byte[0] == protocol::CMD_GO) {}
+    let mut last_beat = Instant::now();
+    loop {
+        if uart.read_ready() {
+            if uart_read_exact(&mut uart, &mut byte) {
+                if byte[0] == protocol::CMD_GO {
+                    break;
+                }
+                let _ = writeln!(UartText(&mut uart), "[STREAM] nhan byte 0x{:02x}, chua phai G", byte[0]);
+            }
+        } else if last_beat.elapsed().as_micros() > 2_000_000 {
+            uart_write_all(&mut uart, b"[STREAM] van dang cho lenh G...
+");
+            last_beat = Instant::now();
+        }
+    }
     let _ = writeln!(UartText(&mut uart), "[STREAM] BAUD {}", protocol::FAST_BAUD);
     let _ = uart.flush();
     busy_wait_us(20_000);
