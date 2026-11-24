@@ -5,10 +5,13 @@
 // PC đổi theo và gửi CMD_PING, bo trả "[STREAM] OK". Sau đó:
 //   CMD_CONFIG + CONFIG_LEN byte -> bo tạo lại Learner (bộ nhớ rỗng, trọng số pretrain),
 //                                   trả "[STREAM] CONFIG OK K=.. H=.. W=0x.." (W = pretrained_fingerprint)
-//   CMD_STEP + bước (u32) + số nhãn (u8) + mỗi nhãn (ID u32, nhãn u8) + WINDOW_LEN mẫu f32
-//                                -> bo trả các dòng [EVT] của bước (gửi SAU khi đo thời gian),
-//                                   rồi dòng "[STEP] step=.. pred=.. ext_us=.. learn_us=.. sum=.."
-//                                   (sum = fnv1a của phần mẫu bo nhận được, để PC phát hiện dữ liệu hỏng)
+//   CMD_STEP + bước (u32) + số nhãn (u8) + sum (u32) + mỗi nhãn (ID u32, nhãn u8) + WINDOW_LEN mẫu f32
+//            (sum = frame_sum(bước + số nhãn, nhãn + mẫu))
+//                                -> bo kiểm tra sum TRƯỚC khi xử lý. Đúng: trả các dòng [EVT] của bước (gửi SAU
+//                                   khi đo thời gian), rồi "[STEP] step=.. pred=.. ext_us=.. learn_us=.. sum=..".
+//                                   Hỏng (thiếu byte quá FRAME_IDLE_MS, lỗi UART, sai sum): bỏ khung, in lý do,
+//                                   chờ đường truyền im rồi trả RESEND_LINE; PC gửi lại nguyên khung. Khung hỏng
+//                                   không chạm vào bộ học, nên gửi lại không làm lệch kết quả
 //   CMD_PING                     -> "[STREAM] OK"
 // Số nguyên và f32 theo thứ tự byte little-endian. Gửi f32 nguyên bản để đặc trưng trên bo khớp từng bit với PC.
 // Không phát theo thời gian thực (UART không đủ băng thông cho 64 KB mỗi 256 ms): PC chờ dòng [STEP] rồi mới
@@ -34,6 +37,12 @@ pub const CONFIG_LEN: usize = 24;
 pub const MAX_LABELS_PER_STEP: usize = 32;
 /// Số byte mẫu của một cửa sổ
 pub const SAMPLE_BYTES: usize = WINDOW_LEN * 4;
+/// Độ dài đầu khung sau CMD_STEP: bước (u32) + số nhãn (u8) + sum (u32)
+pub const STEP_HEAD_LEN: usize = 9;
+/// Trong một khung, quá chừng này ms không có byte mới thì bo coi như mất dữ liệu
+pub const FRAME_IDLE_MS: u64 = 500;
+/// Dòng bo gửi khi bỏ một khung hỏng và sẵn sàng nhận lại
+pub const RESEND_LINE: &str = "[STREAM][GUI LAI]";
 
 const FNV_OFFSET: u32 = 0x811c_9dc5;
 const FNV_PRIME: u32 = 0x0100_0193;
@@ -46,9 +55,9 @@ fn fnv_feed(mut h: u32, bytes: &[u8]) -> u32 {
     h
 }
 
-/// Mã kiểm tra FNV-1a 32 bit (kiểm tra khung mẫu đến nơi nguyên vẹn)
-pub fn fnv1a(data: &[u8]) -> u32 {
-    fnv_feed(FNV_OFFSET, data)
+/// Mã kiểm tra FNV-1a 32 bit của các phần nối liền nhau (bằng mã của cả dãy ghép lại)
+pub fn frame_sum(parts: &[&[u8]]) -> u32 {
+    parts.iter().fold(FNV_OFFSET, |h, p| fnv_feed(h, p))
 }
 
 /// Dấu vân tay của trọng số pretrain đang được biên dịch vào (hệ số chuẩn hóa, W, b).

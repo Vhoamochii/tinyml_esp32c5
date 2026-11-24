@@ -247,6 +247,18 @@ fn test_retention_fifo_vs_reservoir() {
 }
 
 #[test]
+fn test_frame_sum_parts_equal_whole() {
+    // Bo tính mã theo từng phần (đầu khung, nhãn, mẫu), PC tính trên dãy liền: hai cách phải bằng nhau
+    let data: Vec<u8> = (0..1000u32).map(|i| (i * 7 + 3) as u8).collect();
+    let whole = protocol::frame_sum(&[&data]);
+    assert_eq!(protocol::frame_sum(&[&data[..5], &data[5..10], &data[10..]]), whole);
+    assert_eq!(protocol::frame_sum(&[&data[..5], &[], &data[5..]]), whole);
+    let mut bad = data.clone();
+    bad[500] ^= 1;
+    assert_ne!(protocol::frame_sum(&[&bad]), whole);
+}
+
+#[test]
 fn test_protocol_config_roundtrip() {
     println!("[TEST][PROTOCOL][Config] Bat dau...");
     let cfg = Config {

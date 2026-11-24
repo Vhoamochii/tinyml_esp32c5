@@ -208,12 +208,24 @@ fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
     }
 }
 
-/// Đọc đủ `buf.len()` byte (chặn tới khi có dữ liệu); false nếu UART báo lỗi (lỗi được in ra cho PC thấy)
+/// Đọc đủ `buf.len()` byte. false (kèm dòng [STREAM][LOI] cho PC thấy) nếu UART báo lỗi hoặc quá
+/// FRAME_IDLE_MS không có byte mới (byte bị rơi trên đường truyền: không chờ mãi)
 fn uart_read_exact(uart: &mut Uart<'_, Blocking>, buf: &mut [u8]) -> bool {
     let mut filled = 0;
+    let mut last = Instant::now();
     while filled < buf.len() {
+        if !uart.read_ready() {
+            if last.elapsed().as_micros() > protocol::FRAME_IDLE_MS * 1000 {
+                let _ = writeln!(UartText(uart), "[STREAM][LOI] het thoi gian cho du lieu (da nhan {}/{} byte)", filled, buf.len());
+                return false;
+            }
+            continue;
+        }
         match uart.read(&mut buf[filled..]) {
-            Ok(n) => filled += n,
+            Ok(n) => {
+                filled += n;
+                last = Instant::now();
+            }
             Err(e) => {
                 let _ = writeln!(UartText(uart), "[STREAM][LOI] nhan UART: {:?} (da nhan {}/{} byte)", e, filled, buf.len());
                 return false;
@@ -221,6 +233,19 @@ fn uart_read_exact(uart: &mut Uart<'_, Blocking>, buf: &mut [u8]) -> bool {
         }
     }
     true
+}
+
+/// Sau một khung hỏng: bỏ mọi byte còn đến cho tới khi đường truyền im 100 ms, rồi báo PC gửi lại
+fn request_resend(uart: &mut Uart<'_, Blocking>) {
+    let mut junk = [0u8; 64];
+    let mut last = Instant::now();
+    while last.elapsed().as_micros() < 100_000 {
+        if uart.read_ready() {
+            let _ = uart.read(&mut junk);
+            last = Instant::now();
+        }
+    }
+    let _ = writeln!(UartText(uart), "{}", protocol::RESEND_LINE);
 }
 
 /// Cho phép dùng writeln! trên UART
@@ -268,6 +293,8 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
     let mut events = [Event { step: 0, id: 0, kind: EventKind::Admitted }; MAX_EVENTS_PER_STEP];
 
     loop {
+        // Chờ byte lệnh không giới hạn thời gian (hạn chờ chỉ áp dụng bên trong một khung)
+        while !uart.read_ready() {}
         if !uart_read_exact(&mut uart, &mut byte) {
             continue;
         }
@@ -296,20 +323,31 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                 }
             }
             protocol::CMD_STEP => {
-                // Đầu khung: bước (u32) + số nhãn (u8), rồi các nhãn, rồi mẫu
-                let mut head = [0u8; 5];
+                // Đầu khung: bước (u32) + số nhãn (u8) + sum (u32), rồi các nhãn, rồi mẫu.
+                // Khung hỏng bị bỏ trước khi chạm vào bộ trích/bộ học, rồi xin PC gửi lại
+                let mut head = [0u8; protocol::STEP_HEAD_LEN];
                 if !uart_read_exact(&mut uart, &mut head) {
+                    request_resend(&mut uart);
                     continue;
                 }
                 let step = u32::from_le_bytes([head[0], head[1], head[2], head[3]]);
                 let n_labels = head[4] as usize;
+                let want_sum = u32::from_le_bytes([head[5], head[6], head[7], head[8]]);
                 if n_labels > protocol::MAX_LABELS_PER_STEP {
-                    uart_write_all(&mut uart, b"[STREAM] QUA NHIEU NHAN\n");
+                    let _ = writeln!(UartText(&mut uart), "[STREAM][LOI] so nhan {} qua lon (dau khung hong?)", n_labels);
+                    request_resend(&mut uart);
                     continue;
                 }
                 if !uart_read_exact(&mut uart, &mut label_bytes[..n_labels * 5])
                     || !uart_read_exact(&mut uart, &mut samples)
                 {
+                    request_resend(&mut uart);
+                    continue;
+                }
+                let sum = protocol::frame_sum(&[&head[..5], &label_bytes[..n_labels * 5], &samples]);
+                if sum != want_sum {
+                    let _ = writeln!(UartText(&mut uart), "[STREAM][LOI] buoc {} sai ma kiem tra: nhan {} / PC {}", step, sum, want_sum);
+                    request_resend(&mut uart);
                     continue;
                 }
                 let Some((learner, updates)) = learner.as_mut() else {
@@ -356,7 +394,6 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                     pred
                 };
                 let learn_us = micros_since(t1);
-                let sum = protocol::fnv1a(&samples);
 
                 // Gửi kết quả sau khi đã đo xong
                 for e in &events[..count] {
@@ -375,7 +412,13 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                     sum
                 );
             }
-            _ => {} // Bỏ qua byte lạ (ví dụ CMD_GO thừa từ lúc bắt tay)
+            protocol::CMD_GO => {} // CMD_GO thừa từ lúc bắt tay
+            other => {
+                // Byte lệnh lạ: thường do byte lệnh của khung bị rơi, phần còn lại của khung đang tới.
+                // Bỏ hết rồi xin gửi lại, tránh đọc dữ liệu mẫu như lệnh (ví dụ byte 'C' tạo lại bộ học)
+                let _ = writeln!(UartText(&mut uart), "[STREAM][LOI] byte lenh la 0x{:02x}", other);
+                request_resend(&mut uart);
+            }
         }
     }
 }

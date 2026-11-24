@@ -28,6 +28,8 @@ const UPDATES_PER_STEP: u32 = 2;
 const LABEL_GROUP: u32 = 9;
 /// Hạn mỗi cửa sổ theo đề cương: T = bước trượt / 64000 giây = 16384 / 64000 s
 const WINDOW_BUDGET_US: u32 = 256_000;
+/// Số lần gửi lại tối đa cho một bước trước khi bỏ cuộc
+const MAX_RESENDS: u32 = 5;
 /// Luồng kiểm thử, giống TEST_STREAMS trong main.rs
 const STREAM_A: [&str; NUM_CLASSES] = ["K005", "KI18", "KA22"];
 const STREAM_B: [&str; NUM_CLASSES] = ["K006", "KI21", "KA30"];
@@ -248,6 +250,7 @@ fn main() {
     let (mut ext_us, mut learn_us, mut loop_us, mut wall_us) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut matched_steps, mut correct) = (0usize, 0usize);
     let mut mismatches_shown = 0;
+    let mut resends = 0;
 
     for (step, (class, window)) in data.iter().enumerate() {
         let step = step as u32;
@@ -270,11 +273,12 @@ fn main() {
         }
         reference.train(step, UPDATES_PER_STEP, &mut log);
 
-        // Khung gửi xuống bo
-        let mut frame = Vec::with_capacity(6 + due.len() * 5 + protocol::SAMPLE_BYTES);
+        // Khung gửi xuống bo: lệnh, đầu khung (bước, số nhãn, sum), nhãn, mẫu
+        let mut frame = Vec::with_capacity(1 + protocol::STEP_HEAD_LEN + due.len() * 5 + protocol::SAMPLE_BYTES);
         frame.push(protocol::CMD_STEP);
         frame.extend_from_slice(&step.to_le_bytes());
         frame.push(due.len() as u8);
+        frame.extend_from_slice(&[0; 4]); // sum, điền sau
         for &(_, id, label) in &due {
             frame.extend_from_slice(&id.to_le_bytes());
             frame.push(label);
@@ -283,19 +287,33 @@ fn main() {
         for v in window {
             frame.extend_from_slice(&v.to_le_bytes());
         }
-        let expected_sum = protocol::fnv1a(&frame[frame.len() - protocol::SAMPLE_BYTES..]);
+        let expected_sum = protocol::frame_sum(&[&frame[1..6], &frame[1 + protocol::STEP_HEAD_LEN..]]);
+        frame[6..10].copy_from_slice(&expected_sum.to_le_bytes());
         let sent = Instant::now();
-        send(&mut reader, &frame);
 
-        // Kết quả của bo: các dòng [EVT], kết thúc bằng [STEP]
+        // Kết quả của bo: các dòng [EVT], kết thúc bằng [STEP]. Bo báo khung hỏng thì gửi lại nguyên khung
         let mut got: Vec<String> = Vec::new();
-        let step_line = loop {
-            match read_line(&mut reader, Duration::from_secs(10)) {
-                Some(line) if line.starts_with("[STEP]") => break line,
-                Some(line) if line.starts_with("[EVT]") => got.push(line),
-                Some(line) if !line.is_empty() => println!("[BO] {line}"),
-                Some(_) => {}
-                None => fail(&format!("bo khong tra loi o buoc {step}")),
+        let mut tries = 0;
+        let step_line = 'frame: loop {
+            send(&mut reader, &frame);
+            loop {
+                match read_line(&mut reader, Duration::from_secs(10)) {
+                    Some(line) if line.starts_with("[STEP]") => break 'frame line,
+                    Some(line) if line.starts_with("[EVT]") => got.push(line),
+                    Some(line) if line.starts_with(protocol::RESEND_LINE) => {
+                        tries += 1;
+                        resends += 1;
+                        if tries > MAX_RESENDS {
+                            fail(&format!("buoc {step}: da gui lai {MAX_RESENDS} lan van hong"));
+                        }
+                        println!("[STREAM] gui lai buoc {step} (lan {tries})");
+                        got.clear();
+                        continue 'frame;
+                    }
+                    Some(line) if !line.is_empty() => println!("[BO] {line}"),
+                    Some(_) => {}
+                    None => fail(&format!("bo khong tra loi o buoc {step}")),
+                }
             }
         };
         wall_us.push(sent.elapsed().as_micros() as u32);
@@ -334,6 +352,7 @@ fn main() {
     println!("[STREAM] Toan vong tren bo:       trung vi {t50} us | P95 {t95} us | max {tmax} us");
     println!("[STREAM] Qua han (> {WINDOW_BUDGET_US} us): {over}/{steps} ({:.2}%)", over as f32 / n * 100.0);
     println!("[STREAM] Ca truyen UART (PC do, gui khung -> nhan [STEP]): trung vi {w50} us | P95 {w95} us");
+    println!("[STREAM] Khung gui lai do hong tren duong truyen: {resends} lan / {steps} buoc");
     if matched_steps != steps {
         std::process::exit(1);
     }
