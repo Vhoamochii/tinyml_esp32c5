@@ -5,6 +5,7 @@
 #![no_std]
 
 pub mod event;
+pub mod features;
 pub mod head;
 pub mod learner;
 pub mod memsim;
@@ -13,7 +14,7 @@ pub mod rng;
 pub mod schedule;
 pub mod selftest;
 
-/// Số đặc trưng do bộ trích xuất INT8 tạo ra cho mỗi cửa sổ (vectơ z)
+/// Số đặc trưng bộ trích xuất tạo ra cho mỗi cửa sổ (vectơ z)
 pub const NUM_FEATURES: usize = 16;
 /// Ba lớp chẩn đoán: ổ khỏe, lỗi vòng trong, lỗi vòng ngoài
 pub const NUM_CLASSES: usize = 3;

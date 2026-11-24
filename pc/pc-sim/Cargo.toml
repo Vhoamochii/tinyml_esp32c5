@@ -2,11 +2,13 @@
 name = "pc-sim"
 version = "0.1.0"
 edition = "2021"
-# Hai chương trình: pc-sim (thí nghiệm, mặc định) và selftest (src/bin/selftest.rs)
+# Chương trình: pc-sim (thí nghiệm, mặc định), selftest và inspect_mat (src/bin/)
 default-run = "pc-sim"
 
 [dependencies]
 tinyml-core = { path = "../../tinyml-core" }
+# Giải nén zlib bên trong file .mat (thuần Rust)
+miniz_oxide = "0.9"
 
 [dev-dependencies]
 criterion = "0.5"
