@@ -7,11 +7,13 @@
 //   - Lần đo 17-20 ở tốc độ cũ để riêng đo mức quên, không vào luồng học.
 //   - Đặc trưng chuẩn hóa và lớp cuối khởi đầu bằng kết quả pretrain (tinyml-core/src/pretrained.rs).
 // Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
-// Thí nghiệm: quét số ô K (tức dung lượng M), với mỗi K: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại,
-// mốc "chỉ pretrain" (không cập nhật), và thí nghiệm phụ "res" = reservoir (R giữ mẫu ngẫu nhiên đều của cả
-// lịch sử thay cho vào trước ra trước) với r = 0%, 25%, 50%; hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
-// 5 hạt giống ghép cặp.
+// Mặc định: cấu hình đã khóa (K = 25, r = 0%, ưu tiên Q, Q tối đa 9) với 3 phương án nhóm chốt:
+//   Case 1 = tắt học lại, Case 2 = R vào trước ra trước (luật đề cương), Case 3 = R reservoir.
+//   In (1) bảng chọn tốc độ học lr và (2) bảng chốt trên tập chọn cấu hình, có độ lệch chuẩn giữa 5 hạt giống.
+// --sweep: thí nghiệm chọn cấu hình đầy đủ: quét K = 12, 15, 20, 25; r = 0%, 25%, 50% với cả hai luật R;
+//   hai lịch học (xen kẽ, ưu tiên Q). Cả hai chế độ đều chạy hai lịch trả nhãn (rải, theo đợt).
 //   cargo run --release --bin pc-sim
+//   cargo run --release --bin pc-sim -- --sweep
 
 use std::collections::VecDeque;
 
@@ -32,7 +34,13 @@ type Features = [f32; NUM_FEATURES];
 // đủ chật cho r có tác dụng; M tương ứng = K·s + H.
 const Q_MAX: u32 = 9; // Giới hạn Q (tạm): bằng một đợt nhãn, để đợt nhãn không tự mất 1 nhãn
 const UPDATES_PER_STEP: u32 = 2; // Số lượt học mỗi bước, thay cho giới hạn thời gian mỗi bước (tạm)
-const LEARNING_RATE: f32 = 0.1;
+const LEARNING_RATE: f32 = 0.1; // Dùng cho --sweep và bảng chốt; chọn lại sau bảng CHON TOC DO HOC
+
+// Cấu hình đã khóa sau thí nghiệm chọn cấu hình (--sweep): r = 0% vì r lớn hơn không giảm quên mà chỉ
+// làm mất nhãn; ưu tiên Q vì chờ ngắn hơn, BA cao hơn ở lịch theo đợt; BA gần như không đổi theo K
+const LOCKED_K: usize = 25;
+const LOCKED_SCHEDULE: Schedule = Schedule::QPriority;
+const LR_CANDIDATES: [f32; 3] = [0.05, 0.1, 0.2];
 
 // Luồng Paderborn
 const OLD_STREAM_MEASUREMENTS: (u32, u32) = (1, 16); // Tốc độ cũ, vào luồng học
@@ -240,12 +248,43 @@ fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> Ru
     st
 }
 
+#[derive(Clone, Copy)]
 struct Variant {
     name: &'static str,
     r_protected: u32,
     replay_enabled: bool,
     learn: bool, // false: tốc độ học 0, giữ nguyên trọng số pretrain (mốc so sánh)
     retention: Retention,
+}
+
+/// Mốc so sánh: giữ nguyên trọng số pretrain, không học trên thiết bị
+const PRETRAIN_ONLY: Variant =
+    Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false, retention: Retention::Fifo };
+
+/// Ba phương án nhóm chốt (r = 0%)
+const CASES: [Variant; 3] = [
+    Variant { name: "C1 tat hoc lai", r_protected: 0, replay_enabled: false, learn: true, retention: Retention::Fifo },
+    Variant { name: "C2 R vao truoc", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Fifo },
+    Variant { name: "C3 reservoir", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Reservoir },
+];
+
+/// Chạy một biến thể với mọi hạt giống
+fn run_seeds<const N: usize>(data: &Dataset, labels: LabelSchedule, schedule: Schedule, v: &Variant, lr: f32) -> Vec<RunStats> {
+    SEEDS
+        .iter()
+        .map(|&seed| {
+            let cfg = Config {
+                r_protected: v.r_protected,
+                q_max: Q_MAX,
+                schedule,
+                replay_enabled: v.replay_enabled,
+                lr: if v.learn { lr } else { 0.0 },
+                seed,
+                retention: v.retention,
+            };
+            run::<N>(data, labels, cfg)
+        })
+        .collect()
 }
 
 fn main() {
@@ -264,93 +303,115 @@ fn main() {
         SEEDS.len()
     );
 
-    sweep::<12>(&data);
-    sweep::<15>(&data);
-    sweep::<20>(&data);
-    sweep::<25>(&data);
+    if std::env::args().any(|a| a == "--sweep") {
+        sweep::<12>(&data);
+        sweep::<15>(&data);
+        sweep::<20>(&data);
+        sweep::<25>(&data);
+    } else {
+        choose_learning_rate(&data);
+        locked_table(&data);
+    }
 
-    println!("\nBA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).");
+    println!("\nC1 = hoc tren thiet bi, tat hoc lai | C2 = hoc lai, R vao truoc ra truoc (de cuong) | C3 = hoc lai, R reservoir");
+    println!("a+-b = trung binh +- do lech chuan giua {} hat giong.", SEEDS.len());
+    println!("BA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).");
     println!("BA cu = BA tren cac cua so N15 de rieng, ngay truoc khi doi toc do.");
     println!("Quen = BA cu - BA tren cung cac cua so do sau thich nghi (diem %).");
-    println!("Phuc hoi = so cua so toc do moi de BA truot ({} cua so) tro ve muc truoc khi doi.", SLIDING_WINDOWS);
+    println!("Phuc hoi = so cua so toc do moi de BA truot ({SLIDING_WINDOWS} cua so) tro ve muc truoc khi doi.");
 }
 
-/// Toàn bộ bảng thí nghiệm với K = N ô
-fn sweep<const N: usize>(data: &Dataset) {
-    let memory = N * SLOT_SIZE_BYTES + MANAGEMENT_BYTES;
-    assert_eq!(slots_for_budget(memory, MANAGEMENT_BYTES), N);
+fn locked_banner(title: &str) {
     println!(
-        "\n################ K = {} o | M = {} byte (s = {} byte/o, H = {} byte) | Q toi da {} | {} luot hoc/buoc | lr = {}",
-        N, memory, SLOT_SIZE_BYTES, MANAGEMENT_BYTES, Q_MAX, UPDATES_PER_STEP, LEARNING_RATE
+        "\n################ {title} | K = {LOCKED_K} o, M = {} byte | r = 0% | {} | Q toi da {Q_MAX} | {UPDATES_PER_STEP} luot hoc/buoc",
+        LOCKED_K * SLOT_SIZE_BYTES + MANAGEMENT_BYTES,
+        schedule_name(LOCKED_SCHEDULE)
     );
+}
 
-    let variants = [
-        Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false, retention: Retention::Fifo },
-        Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false, learn: true, retention: Retention::Fifo },
-        Variant { name: "r = 0%", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Fifo },
-        Variant {
-            name: "r = 25%",
-            r_protected: (N * 25 / 100) as u32,
-            replay_enabled: true,
-            learn: true,
-            retention: Retention::Fifo,
-        },
-        Variant {
-            name: "r = 50%",
-            r_protected: (N * 50 / 100) as u32,
-            replay_enabled: true,
-            learn: true,
-            retention: Retention::Fifo,
-        },
-        Variant { name: "res r = 0%", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Reservoir },
-        Variant {
-            name: "res r = 25%",
-            r_protected: (N * 25 / 100) as u32,
-            replay_enabled: true,
-            learn: true,
-            retention: Retention::Reservoir,
-        },
-        Variant {
-            name: "res r = 50%",
-            r_protected: (N * 50 / 100) as u32,
-            replay_enabled: true,
-            learn: true,
-            retention: Retention::Reservoir,
-        },
-    ];
-
+/// Đề cương: chọn tốc độ học trên tập chọn cấu hình, giữ cố định các yếu tố còn lại
+fn choose_learning_rate(data: &Dataset) {
+    locked_banner("CHON TOC DO HOC");
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
-        println!("\n=== K = {} | LICH TRA NHAN: {} (trung binh {} hat giong) ===", N, labels.name(), SEEDS.len());
-        println!(
-            "{:<10} | {:<12} | {:>6} | {:>6} | {:>6} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
-            "Lich hoc", "Bien the", "BA moi", "BA cu", "Quen", "Phuc hoi", "Khop", "Bo P", "Bo Q", "Khong o", "Hoc dau", "Hoc lai", "Cho TB"
-        );
-        for schedule in [Schedule::Interleaved, Schedule::QPriority] {
-            for v in &variants {
-                let runs: Vec<RunStats> = SEEDS
-                    .iter()
-                    .map(|&seed| {
-                        let cfg = Config {
-                            r_protected: v.r_protected,
-                            q_max: Q_MAX,
-                            schedule,
-                            replay_enabled: v.replay_enabled,
-                            lr: if v.learn { LEARNING_RATE } else { 0.0 },
-                            seed,
-                            retention: v.retention,
-                        };
-                        run::<N>(data, labels, cfg)
-                    })
-                    .collect();
-                print_row(schedule, v.name, &runs);
+        println!("\n=== CHON LR | LICH TRA NHAN: {} ===", labels.name());
+        print_header("Toc do hoc");
+        for case in &CASES {
+            for lr in LR_CANDIDATES {
+                print_row(&format!("lr = {lr}"), case.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, case, lr));
             }
         }
     }
 }
 
-fn print_row(schedule: Schedule, variant: &str, runs: &[RunStats]) {
+/// Bảng chốt trên tập chọn cấu hình: mốc chỉ pretrain và 3 phương án với cấu hình đã khóa
+fn locked_table(data: &Dataset) {
+    locked_banner(&format!("BANG CHOT TREN TAP CHON CAU HINH, lr = {LEARNING_RATE}"));
+    for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
+        println!("\n=== BANG CHOT | LICH TRA NHAN: {} ===", labels.name());
+        print_header("Lich nhan");
+        for v in std::iter::once(&PRETRAIN_ONLY).chain(CASES.iter()) {
+            print_row(labels.name(), v.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, v, LEARNING_RATE));
+        }
+    }
+}
+
+/// Thí nghiệm chọn cấu hình với K = N ô (--sweep)
+fn sweep<const N: usize>(data: &Dataset) {
+    let memory = N * SLOT_SIZE_BYTES + MANAGEMENT_BYTES;
+    assert_eq!(slots_for_budget(memory, MANAGEMENT_BYTES), N);
+    println!(
+        "\n################ K = {N} o | M = {memory} byte (s = {SLOT_SIZE_BYTES} byte/o, H = {MANAGEMENT_BYTES} byte) | Q toi da {Q_MAX} | {UPDATES_PER_STEP} luot hoc/buoc | lr = {LEARNING_RATE}"
+    );
+
+    let r25 = (N * 25 / 100) as u32;
+    let r50 = (N * 50 / 100) as u32;
+    let fifo = CASES[1];
+    let reservoir = CASES[2];
+    let variants = [
+        PRETRAIN_ONLY,
+        CASES[0],
+        Variant { name: "r = 0%", ..fifo },
+        Variant { name: "r = 25%", r_protected: r25, ..fifo },
+        Variant { name: "r = 50%", r_protected: r50, ..fifo },
+        Variant { name: "res r = 0%", ..reservoir },
+        Variant { name: "res r = 25%", r_protected: r25, ..reservoir },
+        Variant { name: "res r = 50%", r_protected: r50, ..reservoir },
+    ];
+
+    for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
+        println!("\n=== K = {N} | LICH TRA NHAN: {} ===", labels.name());
+        print_header("Lich hoc");
+        for schedule in [Schedule::Interleaved, Schedule::QPriority] {
+            for v in &variants {
+                print_row(schedule_name(schedule), v.name, &run_seeds::<N>(data, labels, schedule, v, LEARNING_RATE));
+            }
+        }
+    }
+}
+
+fn schedule_name(schedule: Schedule) -> &'static str {
+    match schedule {
+        Schedule::Interleaved => "xen ke",
+        Schedule::QPriority => "uu tien Q",
+    }
+}
+
+fn print_header(first: &str) {
+    println!(
+        "{:<10} | {:<14} | {:>12} | {:>6} | {:>12} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
+        first, "Phuong an", "BA moi", "BA cu", "Quen", "Phuc hoi", "Khop", "Bo P", "Bo Q", "Khong o", "Hoc dau", "Hoc lai", "Cho TB"
+    );
+}
+
+fn print_row(first: &str, variant: &str, runs: &[RunStats]) {
     let n = runs.len() as f32;
     let mean = |f: &dyn Fn(&RunStats) -> f32| runs.iter().map(f).sum::<f32>() / n;
+    // Trung bình +- độ lệch chuẩn mẫu (chia n - 1) giữa các hạt giống
+    let spread = |f: &dyn Fn(&RunStats) -> f32| {
+        let m = mean(f);
+        let var = runs.iter().map(|r| (f(r) - m).powi(2)).sum::<f32>() / (n - 1.0).max(1.0);
+        format!("{m:.2}+-{:.2}", var.sqrt())
+    };
     let recovered: Vec<u32> = runs.iter().filter_map(|r| r.recovery).collect();
     let recovery = if recovered.is_empty() {
         "chua phuc hoi".to_string()
@@ -360,17 +421,13 @@ fn print_row(schedule: Schedule, variant: &str, runs: &[RunStats]) {
     };
     let match_rate = mean(&|r| r.labels_matched as f32 / r.labels_arrived.max(1) as f32 * 100.0);
     let wait = mean(&|r| r.wait_sum as f32 / r.first_learns.max(1) as f32);
-    let schedule_name = match schedule {
-        Schedule::Interleaved => "xen ke",
-        Schedule::QPriority => "uu tien Q",
-    };
     println!(
-        "{:<10} | {:<12} | {:>6.2} | {:>6.2} | {:>6.2} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
-        schedule_name,
+        "{:<10} | {:<14} | {:>12} | {:>6.2} | {:>12} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
+        first,
         variant,
-        mean(&|r| r.ba_new),
+        spread(&|r| r.ba_new),
         mean(&|r| r.ba_old_before),
-        mean(&|r| r.forgetting),
+        spread(&|r| r.forgetting),
         recovery,
         match_rate,
         mean(&|r| r.evicted_p as f32),
