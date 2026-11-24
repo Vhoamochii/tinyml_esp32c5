@@ -1,4 +1,4 @@
-// Bước 3: chuẩn hóa 16 đặc trưng + huấn luyện sẵn lớp cuối trên 8 ổ huấn luyện ở tốc độ cũ (N15_M07_F10).
+// Bước 3: chuẩn hóa 16 đặc trưng + huấn luyện sẵn lớp cuối trên các ổ huấn luyện ở tốc độ cũ (N15_M07_F10).
 // Kết quả (hệ số chuẩn hóa, trọng số) được ghi vào tinyml-core/src/pretrained.rs: trọng số ban đầu chung
 // cho mọi lần chạy thí nghiệm và cho firmware.
 // Chẩn đoán kèm theo: ma trận nhầm lẫn theo từng ổ, và kiểm tra chéo bỏ-một-ổ (khả năng tổng quát sang ổ mới).
@@ -164,7 +164,11 @@ fn print_eval(name: &str, head: &Head<NUM_CLASSES>, records: &[Record], mean: &F
 fn write_pretrained(head: &Head<NUM_CLASSES>, mean: &Features, std: &Features) -> std::io::Result<std::path::PathBuf> {
     let mut s = String::new();
     let _ = writeln!(s, "// FILE SINH TỰ ĐỘNG bởi `cargo run --release --bin pretrain` trong pc/pc-sim. Không sửa tay.");
-    let _ = writeln!(s, "// Hệ số chuẩn hóa 16 đặc trưng và trọng số lớp cuối huấn luyện sẵn trên 8 ổ huấn luyện ở N15_M07_F10.");
+    let _ = writeln!(
+        s,
+        "// Hệ số chuẩn hóa 16 đặc trưng và trọng số lớp cuối huấn luyện sẵn trên {} ở N15_M07_F10.",
+        paderborn::TRAIN_BEARINGS.join(", ")
+    );
     let _ = writeln!(
         s,
         "// Lần đo {}-{}, {} cửa sổ mỗi bản ghi, {} lượt, lr = {}, hạt giống {}.",
@@ -207,8 +211,9 @@ fn main() {
 
     // Ma trận nhầm lẫn theo từng ổ: mỗi ổ bị đoán thành lớp nào
     println!();
-    print_eval("Hoc: 8 o, N15, lan do 1-16", &head, &train, &mean, &std);
-    print_eval("Kiem tra: 8 o, N15, lan do 17-20", &head, &val, &mean, &std);
+    let n = paderborn::TRAIN_BEARINGS.len();
+    print_eval(&format!("Hoc: {n} o, N15, lan do 1-16"), &head, &train, &mean, &std);
+    print_eval(&format!("Kiem tra: {n} o, N15, lan do 17-20"), &head, &val, &mean, &std);
     print_eval("O cau hinh moi, N15 (toc do cu)", &head, &config_old, &mean, &std);
     print_eval("O cau hinh moi, N09 (toc do moi)", &head, &config_new, &mean, &std);
 
@@ -227,7 +232,7 @@ fn main() {
     }
 
     // Kiểm tra chéo bỏ-một-ổ: học trên 7 ổ (chuẩn hóa cũng chỉ từ 7 ổ đó), chấm ổ thứ 8 chưa từng thấy
-    println!("\n[LOBO] Kiem tra cheo bo-mot-o: hoc 7 o (N15, lan do 1-16), cham o bi bo ra (N15, lan do 1-20)");
+    println!("\n[LOBO] Kiem tra cheo bo-mot-o: hoc {} o (N15, lan do 1-16), cham o bi bo ra (N15, lan do 1-20)", paderborn::TRAIN_BEARINGS.len() - 1);
     let mut held_results = Vec::new();
     for &held in &paderborn::TRAIN_BEARINGS {
         let fold_train = || train.iter().filter(move |r| r.bearing != held);
