@@ -1,6 +1,7 @@
 // Bước 3: chuẩn hóa 16 đặc trưng + huấn luyện sẵn lớp cuối trên 8 ổ huấn luyện ở tốc độ cũ (N15_M07_F10).
 // Kết quả (hệ số chuẩn hóa, trọng số) được ghi vào tinyml-core/src/pretrained.rs: trọng số ban đầu chung
 // cho mọi lần chạy thí nghiệm và cho firmware.
+// Chẩn đoán kèm theo: ma trận nhầm lẫn theo từng ổ, và kiểm tra chéo bỏ-một-ổ (khả năng tổng quát sang ổ mới).
 //   cargo run --release --bin pretrain
 
 use std::fmt::Write as _;
@@ -20,6 +21,7 @@ const SEED: u32 = 2026;
 const CLASS_NAMES: [&str; NUM_CLASSES] = ["khoe", "vong trong", "vong ngoai"];
 
 type Features = [f32; NUM_FEATURES];
+type Samples = Vec<(Features, u8)>;
 
 fn load(root: &Path, condition: &str, bearings: &[&'static str], range: (u32, u32)) -> Vec<Record> {
     match paderborn::load_records(root, condition, bearings, range.0..=range.1) {
@@ -32,11 +34,11 @@ fn load(root: &Path, condition: &str, bearings: &[&'static str], range: (u32, u3
 }
 
 /// Trung bình và độ lệch chuẩn của từng đặc trưng trên tập huấn luyện
-fn fit_normalization(records: &[Record]) -> (Features, Features) {
+fn fit_normalization<'a>(records: impl IntoIterator<Item = &'a Record>) -> (Features, Features) {
     let mut sum = [0.0f64; NUM_FEATURES];
     let mut sum_sq = [0.0f64; NUM_FEATURES];
     let mut n = 0.0f64;
-    for z in records.iter().flat_map(|r| r.features.iter()) {
+    for z in records.into_iter().flat_map(|r| r.features.iter()) {
         for f in 0..NUM_FEATURES {
             sum[f] += z[f] as f64;
             sum_sq[f] += (z[f] as f64).powi(2);
@@ -59,41 +61,103 @@ fn normalized(z: &Features, mean: &Features, std: &Features) -> Features {
     out
 }
 
-/// BA theo đề cương: độ nhạy của từng ổ, trung bình các ổ trong cùng lớp, rồi trung bình đều các lớp.
-/// Trả về (BA %, danh sách (ổ, độ nhạy %)).
-fn evaluate(head: &Head<NUM_CLASSES>, records: &[Record], mean: &Features, std: &Features) -> (f32, Vec<(&'static str, f32)>) {
-    let mut per_bearing: Vec<(&'static str, u8, u32, u32)> = Vec::new(); // (ổ, lớp, đúng, tổng)
+/// Các cặp (đặc trưng đã chuẩn hóa, nhãn) để học
+fn to_samples<'a>(records: impl IntoIterator<Item = &'a Record>, mean: &Features, std: &Features) -> Samples {
+    records
+        .into_iter()
+        .flat_map(|r| r.features.iter().map(move |z| (normalized(z, mean, std), r.class)))
+        .collect()
+}
+
+/// Huấn luyện lớp cuối từ trọng số 0: SGD từng mẫu, xáo trộn mỗi lượt
+fn train_head(samples: &mut Samples, print_loss: bool) -> Head<NUM_CLASSES> {
+    let mut head = Head::<NUM_CLASSES>::zeros();
+    let mut rng = XorShift32::new(SEED);
+    for epoch in 1..=EPOCHS {
+        for i in (1..samples.len()).rev() {
+            let j = rng.below(i as u32 + 1) as usize;
+            samples.swap(i, j);
+        }
+        let mut loss = 0.0f32;
+        for (z, label) in samples.iter() {
+            loss += head.sgd_step(z, *label, LEARNING_RATE);
+        }
+        if print_loss && (epoch == 1 || epoch % 10 == 0) {
+            println!("[PRETRAIN] luot {epoch:>3}: loss = {:.4}", loss / samples.len() as f32);
+        }
+    }
+    head
+}
+
+/// Kết quả trên một ổ: số cửa sổ bị đoán thành từng lớp (một hàng của ma trận nhầm lẫn)
+struct BearingResult {
+    bearing: &'static str,
+    class: u8,
+    predicted: [u32; NUM_CLASSES],
+}
+
+impl BearingResult {
+    fn share(&self, c: usize) -> f32 {
+        self.predicted[c] as f32 / self.predicted.iter().sum::<u32>().max(1) as f32 * 100.0
+    }
+
+    /// Độ nhạy: % cửa sổ đoán đúng lớp của ổ
+    fn recall(&self) -> f32 {
+        self.share(self.class as usize)
+    }
+
+    fn describe(&self) -> String {
+        let shares: Vec<String> = (0..NUM_CLASSES).map(|c| format!("{} {:5.1}%", CLASS_NAMES[c], self.share(c))).collect();
+        format!(
+            "{} ({:<10}): dung {:5.1}% | bi doan thanh: {}",
+            self.bearing,
+            CLASS_NAMES[self.class as usize],
+            self.recall(),
+            shares.join(", ")
+        )
+    }
+}
+
+fn per_bearing<'a>(
+    head: &Head<NUM_CLASSES>,
+    records: impl IntoIterator<Item = &'a Record>,
+    mean: &Features,
+    std: &Features,
+) -> Vec<BearingResult> {
+    let mut out: Vec<BearingResult> = Vec::new();
     for r in records {
-        let idx = match per_bearing.iter().position(|b| b.0 == r.bearing) {
+        let idx = match out.iter().position(|b| b.bearing == r.bearing) {
             Some(i) => i,
             None => {
-                per_bearing.push((r.bearing, r.class, 0, 0));
-                per_bearing.len() - 1
+                out.push(BearingResult { bearing: r.bearing, class: r.class, predicted: [0; NUM_CLASSES] });
+                out.len() - 1
             }
         };
         for z in &r.features {
-            let ok = head.predict(&normalized(z, mean, std)) == r.class as usize;
-            per_bearing[idx].2 += ok as u32;
-            per_bearing[idx].3 += 1;
+            out[idx].predicted[head.predict(&normalized(z, mean, std))] += 1;
         }
     }
-    let recalls: Vec<(&'static str, f32)> =
-        per_bearing.iter().map(|b| (b.0, b.2 as f32 / b.3 as f32 * 100.0)).collect();
+    out
+}
+
+/// BA theo đề cương: độ nhạy của từng ổ, trung bình các ổ trong cùng lớp, rồi trung bình đều các lớp
+fn balanced_accuracy(results: &[BearingResult]) -> f32 {
     let mut class_scores = Vec::new();
     for c in 0..NUM_CLASSES as u8 {
-        let rs: Vec<f32> = per_bearing.iter().zip(&recalls).filter(|(b, _)| b.1 == c).map(|(_, r)| r.1).collect();
+        let rs: Vec<f32> = results.iter().filter(|b| b.class == c).map(BearingResult::recall).collect();
         if !rs.is_empty() {
             class_scores.push(rs.iter().sum::<f32>() / rs.len() as f32);
         }
     }
-    let ba = class_scores.iter().sum::<f32>() / class_scores.len().max(1) as f32;
-    (ba, recalls)
+    class_scores.iter().sum::<f32>() / class_scores.len().max(1) as f32
 }
 
 fn print_eval(name: &str, head: &Head<NUM_CLASSES>, records: &[Record], mean: &Features, std: &Features) {
-    let (ba, recalls) = evaluate(head, records, mean, std);
-    let detail: Vec<String> = recalls.iter().map(|(b, r)| format!("{b} {r:.1}%")).collect();
-    println!("[EVAL] {name:<32} BA = {ba:6.2}% | {}", detail.join(", "));
+    let results = per_bearing(head, records, mean, std);
+    println!("[EVAL] {name:<32} BA = {:6.2}%", balanced_accuracy(&results));
+    for b in &results {
+        println!("[EVAL]     {}", b.describe());
+    }
 }
 
 /// Ghi hệ số chuẩn hóa và trọng số thành mã Rust (định dạng {:?} của f32 đọc lại được chính xác)
@@ -137,29 +201,11 @@ fn main() {
 
     // Chuẩn hóa: hệ số chỉ lấy từ tập học
     let (mean, std) = fit_normalization(&train);
-    let mut samples: Vec<(Features, u8)> = train
-        .iter()
-        .flat_map(|r| r.features.iter().map(move |z| (normalized(z, &mean, &std), r.class)))
-        .collect();
+    let mut samples = to_samples(&train, &mean, &std);
     println!("[PRETRAIN] {} cua so hoc, {} luot, lr = {}", samples.len(), EPOCHS, LEARNING_RATE);
+    let head = train_head(&mut samples, true);
 
-    // Huấn luyện lớp cuối: SGD từng mẫu, xáo trộn mỗi lượt
-    let mut head = Head::<NUM_CLASSES>::zeros();
-    let mut rng = XorShift32::new(SEED);
-    for epoch in 1..=EPOCHS {
-        for i in (1..samples.len()).rev() {
-            let j = rng.below(i as u32 + 1) as usize;
-            samples.swap(i, j);
-        }
-        let mut loss = 0.0f32;
-        for (z, label) in &samples {
-            loss += head.sgd_step(z, *label, LEARNING_RATE);
-        }
-        if epoch == 1 || epoch % 10 == 0 {
-            println!("[PRETRAIN] luot {epoch:>3}: loss = {:.4}", loss / samples.len() as f32);
-        }
-    }
-
+    // Ma trận nhầm lẫn theo từng ổ: mỗi ổ bị đoán thành lớp nào
     println!();
     print_eval("Hoc: 8 o, N15, lan do 1-16", &head, &train, &mean, &std);
     print_eval("Kiem tra: 8 o, N15, lan do 17-20", &head, &val, &mean, &std);
@@ -179,6 +225,22 @@ fn main() {
         let m: Vec<f64> = (0..NUM_CLASSES).map(|c| sums[c] / counts[c].max(1) as f64).collect();
         println!("[FEAT] {name:<18} {:>10.3} {:>10.3} {:>10.3}", m[0], m[1], m[2]);
     }
+
+    // Kiểm tra chéo bỏ-một-ổ: học trên 7 ổ (chuẩn hóa cũng chỉ từ 7 ổ đó), chấm ổ thứ 8 chưa từng thấy
+    println!("\n[LOBO] Kiem tra cheo bo-mot-o: hoc 7 o (N15, lan do 1-16), cham o bi bo ra (N15, lan do 1-20)");
+    let mut held_results = Vec::new();
+    for &held in &paderborn::TRAIN_BEARINGS {
+        let fold_train = || train.iter().filter(move |r| r.bearing != held);
+        let (fold_mean, fold_std) = fit_normalization(fold_train());
+        let mut fold_samples = to_samples(fold_train(), &fold_mean, &fold_std);
+        let fold_head = train_head(&mut fold_samples, false);
+        let held_out = train.iter().chain(val.iter()).filter(|r| r.bearing == held);
+        for result in per_bearing(&fold_head, held_out, &fold_mean, &fold_std) {
+            println!("[LOBO]     bo {}", result.describe());
+            held_results.push(result);
+        }
+    }
+    println!("[LOBO] BA bo-mot-o = {:.2}%", balanced_accuracy(&held_results));
 
     match write_pretrained(&head, &mean, &std) {
         Ok(path) => println!("\n[SAVE] Da ghi {}", path.display()),

@@ -38,7 +38,7 @@ fn main() {
         windows.len()
     );
 
-    let z = extract(&windows[0]);
+    let z = extract(windows[0]);
     println!("[FEAT] 16 dac trung cua cua so dau tien:");
     for (name, value) in FEATURE_NAMES.iter().zip(z.iter()) {
         println!("[FEAT] {name:<18} {value:.6}");

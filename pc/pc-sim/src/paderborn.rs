@@ -15,8 +15,8 @@ pub const NEW_SPEED: &str = "N09_M07_F10";
 pub const VIBRATION_CHANNEL: &str = "vibration_1";
 /// Số lần đo mỗi ổ ở mỗi chế độ
 pub const MEASUREMENTS: u32 = 20;
-/// Số cửa sổ lấy rải đều từ mỗi bản ghi (trong 250 cửa sổ không chồng nhau)
-pub const WINDOWS_PER_RECORD: usize = 32;
+/// Số cửa sổ lấy từ mỗi bản ghi: toàn bộ 15 cửa sổ 256 ms không chồng nhau của bản ghi 4 giây
+pub const WINDOWS_PER_RECORD: usize = 15;
 
 /// Bảng 1 của đề cương: phân tập theo ổ vật lý
 pub const TRAIN_BEARINGS: [&str; 8] = ["K001", "K002", "K003", "KI04", "KI16", "KI17", "KA04", "KA15"];
@@ -72,15 +72,13 @@ pub fn window_count(signal: &[f32]) -> usize {
 }
 
 /// Lấy `count` cửa sổ không chồng nhau, rải đều trong tín hiệu, giữ thứ tự thời gian
-pub fn windows(signal: &[f32], count: usize) -> Vec<[f32; WINDOW_LEN]> {
+pub fn windows(signal: &[f32], count: usize) -> Vec<&[f32; WINDOW_LEN]> {
     let total = window_count(signal);
     let count = count.min(total);
     (0..count)
         .map(|i| {
             let w = i * total / count;
-            let mut out = [0.0f32; WINDOW_LEN];
-            out.copy_from_slice(&signal[w * WINDOW_LEN..(w + 1) * WINDOW_LEN]);
-            out
+            signal[w * WINDOW_LEN..(w + 1) * WINDOW_LEN].try_into().unwrap()
         })
         .collect()
 }
@@ -107,7 +105,7 @@ pub fn load_records(
         for measurement in measurements.clone() {
             let path = measurement_path(root, condition, bearing, measurement);
             let signal = read_vibration(&path)?;
-            let features = windows(&signal, WINDOWS_PER_RECORD).iter().map(extract).collect();
+            let features = windows(&signal, WINDOWS_PER_RECORD).into_iter().map(extract).collect();
             out.push(Record { bearing, class, measurement, features });
         }
         println!("[LOAD] {condition} {bearing}: {} ban ghi", out.len() - before);
