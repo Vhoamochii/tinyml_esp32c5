@@ -1,10 +1,11 @@
-//! Quan ly hang doi mau P (cho nhan) va Q (cho hoc lan dau).
+//! Quan ly hang doi mau P (cho nhan), Q (cho hoc lan dau) va R (hoc lai).
 //! Module thuan no_std, khong dung alloc, kich thuoc co dinh theo const generic.
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum SampleState {
     Pending,   // P: mau da phat, chua co nhan
     Ready,     // Q: da ghep nhan, cho hoc lan dau
+    Replay,    // R: mau da hoc xong, giu lai de on tap
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -80,7 +81,6 @@ impl<const N: usize> FixedQueue<N> {
         None
     }
 
-    /// Xoa mau theo ID va dich cac phan tu phia sau de giu thu tu FIFO.
     fn remove_by_id(&mut self, id: u32) -> Option<Sample> {
         if self.len == 0 {
             return None;
@@ -99,7 +99,6 @@ impl<const N: usize> FixedQueue<N> {
         let abs = (self.head + pos) % N;
         let s = self.buf[abs].take();
         
-        // Dich chuyen cac phan tu phia sau ve truoc 1 o
         for i in pos..(self.len - 1) {
             let cur = (self.head + i) % N;
             let next = (self.head + i + 1) % N;
@@ -112,30 +111,35 @@ impl<const N: usize> FixedQueue<N> {
     }
 }
 
-/// Bo quan ly hai hang doi P, Q cung bo dem thong ke.
-pub struct SampleManager<const P: usize, const Q: usize> {
+pub struct SampleManager<const P: usize, const Q: usize, const R: usize> {
     pub pending: FixedQueue<P>,
     pub ready: FixedQueue<Q>,
+    pub replay: FixedQueue<R>,
+    pub r_min: usize,
     pub pushed: u32,
     pub matched: u32,
     pub learned_first: u32,
     pub dropped_p_full: u32,
     pub dropped_q_full: u32,
+    pub dropped_r_full: u32,
     pub dup_labels: u32,
     pub orphan_labels: u32,
-    completed_mask: u32, // Danh dau cac ID (0-31) da hoc xong
+    completed_mask: u32,
 }
 
-impl<const P: usize, const Q: usize> SampleManager<P, Q> {
-    pub const fn new() -> Self {
+impl<const P: usize, const Q: usize, const R: usize> SampleManager<P, Q, R> {
+    pub const fn new(r_min: usize) -> Self {
         Self {
             pending: FixedQueue::new(),
             ready: FixedQueue::new(),
+            replay: FixedQueue::new(),
+            r_min,
             pushed: 0,
             matched: 0,
             learned_first: 0,
             dropped_p_full: 0,
             dropped_q_full: 0,
+            dropped_r_full: 0,
             dup_labels: 0,
             orphan_labels: 0,
             completed_mask: 0,
@@ -145,26 +149,24 @@ impl<const P: usize, const Q: usize> SampleManager<P, Q> {
     pub fn push_sample(&mut self, features: [i8; 16]) -> Result<u32, PushError> {
         let id = self.pushed;
         let s = Sample::new_pending(id, features);
-        match self.pending.push(s) {
-            Ok(()) => {
-                self.pushed += 1;
-                Ok(id)
-            }
-            Err(e) => {
-                self.dropped_p_full += 1;
-                Err(e)
-            }
+        
+        // Uu tien dung o trong. Neu P day, loai mau cu nhat o P de nhan mau moi.
+        if self.pending.push(s).is_err() {
+            let _ = self.pending.pop();
+            self.dropped_p_full += 1;
+            let _ = self.pending.push(s); // Bay gio chac chan thanh cong
         }
+        
+        self.pushed += 1;
+        Ok(id)
     }
 
     pub fn resolve_label(&mut self, id: u32, label: u8) -> Result<(), ResolveError> {
-        // 1. Kiem tra xem da hoc xong chua (tranh nhan trung sau khi hoc)
         if id < 32 && (self.completed_mask & (1u32 << id)) != 0 {
             self.dup_labels += 1;
             return Err(ResolveError::AlreadyLearned);
         }
         
-        // 2. Kiem tra trong P
         match self.pending.find(id) {
             Some(s) if s.label.is_some() => {
                 self.dup_labels += 1;
@@ -172,44 +174,42 @@ impl<const P: usize, const Q: usize> SampleManager<P, Q> {
             }
             Some(_) => {}
             None => {
-                // Khong o P, co the dang o Q
                 if self.ready.find(id).is_some() {
                     self.dup_labels += 1;
                     return Err(ResolveError::AlreadyLabeled);
                 }
-                // Khong o P, khong o Q -> Nhan mo coi (Orphan)
                 self.orphan_labels += 1;
                 return Err(ResolveError::NotFound);
             }
         }
         
-        // 3. Rut mau khoi P va day sang Q
         let mut s = self.pending.remove_by_id(id).unwrap();
         s.label = Some(label);
         s.state = SampleState::Ready;
         
-        match self.ready.push(s) {
-            Ok(()) => {
-                self.matched += 1;
-                Ok(())
-            }
-            Err(_) => {
-                // Ghep nhan thanh cong nhung Q day -> bi loai
-                self.dropped_q_full += 1;
-                self.matched += 1;
-                Ok(())
-            }
+        if self.ready.push(s).is_err() {
+            self.dropped_q_full += 1;
         }
+        self.matched += 1;
+        Ok(())
     }
 
     pub fn pop_for_learning(&mut self) -> Option<Sample> {
-        let s = self.ready.pop();
-        if let Some(ref smp) = s {
-            self.learned_first += 1;
-            if smp.id < 32 {
-                self.completed_mask |= 1u32 << smp.id;
-            }
+        let mut s = self.ready.pop()?;
+        
+        self.learned_first += 1;
+        if s.id < 32 {
+            self.completed_mask |= 1u32 << s.id;
         }
-        s
+        
+        // Chuyen sang Replay (R). Neu R day, loai mau cu nhat o R (FIFO).
+        s.state = SampleState::Replay;
+        if self.replay.push(s).is_err() {
+            let _ = self.replay.pop();
+            self.dropped_r_full += 1;
+            let _ = self.replay.push(s);
+        }
+        
+        Some(s)
     }
 }
