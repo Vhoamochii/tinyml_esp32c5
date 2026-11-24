@@ -40,15 +40,19 @@ fn fail(msg: &str) -> ! {
 /// Cổng nối tiếp, đọc qua bộ đệm dòng; ghi bằng `get_mut()`
 type Port = BufReader<Box<dyn SerialPort>>;
 
-/// Mở cổng giống espflash: thư viện serialport, rồi thả DTR và RTS. Trên DevKit, hai đường này nối vào
-/// EN (reset) và IO0 của ESP32 qua mạch tự reset; để mặc định khi mở cổng có thể giữ chip ở trạng thái reset
-fn open_port(path: &str, baud: u32) -> Port {
-    let mut port = serialport::new(path, baud)
+/// Mở cổng ở BOOT_BAUD và khởi động lại bo, giống "hard reset" của espflash. Trên DevKit, DTR và RTS nối vào
+/// IO0 và EN của ESP32 qua mạch tự reset: chỉ RTS bật -> EN thấp (giữ reset); thả cả hai -> chip chạy firmware.
+/// Nhờ vậy mỗi lần chạy bo luôn bắt đầu từ trạng thái sạch ở BOOT_BAUD (kể cả khi lần trước bị ngắt giữa khung)
+fn open_port(path: &str) -> Port {
+    let mut port = serialport::new(path, protocol::BOOT_BAUD)
         .timeout(Duration::from_millis(50))
         .open()
         .unwrap_or_else(|e| fail(&format!("mo {path}: {e}")));
     let _ = port.write_data_terminal_ready(false);
+    let _ = port.write_request_to_send(true);
+    std::thread::sleep(Duration::from_millis(100));
     let _ = port.write_request_to_send(false);
+    let _ = port.clear(ClearBuffer::Input);
     BufReader::new(port)
 }
 
@@ -68,14 +72,25 @@ fn send(port: &mut Port, data: &[u8]) {
     }
 }
 
-/// Một dòng từ bo (bỏ ký tự cuối dòng). Hết thời gian chờ của một lần đọc thì đọc tiếp tới khi đủ `timeout`;
+/// Một dòng từ bo (bỏ ký tự cuối dòng). Đọc từng mẩu và xét hạn sau mỗi mẩu, nên không bao giờ chờ quá
+/// `timeout` (kể cả khi bo xả dữ liệu liên tục không có ký tự xuống dòng, ví dụ khi hai bên lệch baud);
 /// None nếu hết hạn mà chưa có gì, hoặc trả phần dòng đang dở
 fn read_line(port: &mut Port, timeout: Duration) -> Option<String> {
     let start = Instant::now();
     let mut buf = Vec::new();
     loop {
-        match port.read_until(b'\n', &mut buf) {
-            Ok(_) if buf.last() == Some(&b'\n') => break,
+        match port.fill_buf() {
+            Ok(chunk) if !chunk.is_empty() => {
+                let (used, done) = match chunk.iter().position(|&b| b == b'\n') {
+                    Some(i) => (i + 1, true),
+                    None => (chunk.len(), false),
+                };
+                buf.extend_from_slice(&chunk[..used]);
+                port.consume(used);
+                if done {
+                    break;
+                }
+            }
             Ok(_) => std::thread::sleep(Duration::from_millis(1)),
             Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
             Err(e) => fail(&format!("doc cong loi: {e}")),
@@ -99,6 +114,7 @@ fn handshake(port: &mut Port, cmd: u8, want: &str, tries: u32) -> bool {
         while let Some(remaining) = Duration::from_secs(1).checked_sub(start.elapsed()) {
             match read_line(port, remaining) {
                 Some(line) if line.starts_with(want) => return true,
+                Some(line) if line.contains('\u{fffd}') => println!("[BO] <{} byte khong doc duoc>", line.len()),
                 Some(line) if !line.is_empty() => println!("[BO] {line}"),
                 Some(_) => {}
                 None => break,
@@ -193,21 +209,19 @@ fn main() {
         fail(&format!("luong chi co {} cua so", data.len()));
     }
 
-    // --- Mở cổng và bắt tay ---
-    // Thử tốc độ cao trước: bo có thể đã ở FAST_BAUD từ lần chạy trước. Nếu không, bắt tay từ BOOT_BAUD.
-    let mut reader = open_port(&port, protocol::FAST_BAUD);
-    println!("[STREAM] Thu lien lac o {} baud...", protocol::FAST_BAUD);
-    if !handshake(&mut reader, protocol::CMD_PING, "[STREAM] OK", 2) {
-        set_baud(&mut reader, protocol::BOOT_BAUD);
-        println!("[STREAM] Bat tay o {} baud (bo co the dang khoi dong lai)...", protocol::BOOT_BAUD);
-        if !handshake(&mut reader, protocol::CMD_GO, "[STREAM] BAUD", 30) {
-            fail("bo khong tra loi: da nap firmware moi va thoat espflash monitor chua?");
-        }
-        std::thread::sleep(Duration::from_millis(100));
-        set_baud(&mut reader, protocol::FAST_BAUD);
-        if !handshake(&mut reader, protocol::CMD_PING, "[STREAM] OK", 10) {
-            fail(&format!("khong lien lac duoc o {} baud", protocol::FAST_BAUD));
-        }
+    // --- Mở cổng (bo khởi động lại) và bắt tay ---
+    let mut reader = open_port(&port);
+    println!(
+        "[STREAM] Da reset bo; bat tay o {} baud, cho bo chay xong selftest + bench (toi da 30 s)...",
+        protocol::BOOT_BAUD
+    );
+    if !handshake(&mut reader, protocol::CMD_GO, "[STREAM] BAUD", 30) {
+        fail("bo khong tra loi: da thoat espflash monitor chua? Neu roi, nhan nut RST tren mach va chay lai");
+    }
+    std::thread::sleep(Duration::from_millis(100));
+    set_baud(&mut reader, protocol::FAST_BAUD);
+    if !handshake(&mut reader, protocol::CMD_PING, "[STREAM] OK", 10) {
+        fail(&format!("khong lien lac duoc o {} baud", protocol::FAST_BAUD));
     }
     println!("[STREAM] Da lien lac o {} baud", protocol::FAST_BAUD);
     let mut frame = vec![protocol::CMD_CONFIG];
