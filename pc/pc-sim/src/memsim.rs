@@ -1,10 +1,15 @@
 // Mô phỏng phân bổ bộ nhớ cho TinyML với nhãn đến trễ
 // Các trạng thái: P (Chờ nhãn), Q (Chờ học), R (Học lại)
 
+use std::collections::VecDeque;
+
 // Ước tính kích thước một mẫu (tính bằng byte)
-// Giả định: ID (4 bytes), Features (16 * 4 bytes = 64 bytes), Label (1 byte), Timestamp (8 bytes)
-// Tổng cộng: 77 bytes. Cộng thêm overhead căn chỉnh (alignment) -> làm tròn lên 80 bytes.
-pub const SAMPLE_SIZE_BYTES: usize = 80; 
+// ID (4) + Features (16 * 4 = 64) + Label Option<u8> (2) + Status (1) + Timestamp (8) = 79 bytes.
+// Căn chỉnh theo u64 (8 bytes) -> 80 bytes.
+pub const SAMPLE_SIZE_BYTES: usize = 80;
+
+// Kiểm tra lúc biên dịch: nếu sửa struct Sample thì phải cập nhật SAMPLE_SIZE_BYTES
+const _: () = assert!(std::mem::size_of::<Sample>() == SAMPLE_SIZE_BYTES);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SampleStatus {
@@ -36,18 +41,29 @@ impl Sample {
 
 pub struct MemoryManager {
     pub p_queue: Vec<Sample>,
-    pub q_queue: Vec<Sample>,
+    pub q_queue: VecDeque<Sample>,
     pub r_queue: Vec<Sample>,
     pub max_memory_bytes: usize,
+    pub r_capacity: usize, // Số mẫu tối đa được giữ trong R
+    pub r_seen: u64,       // Tổng số mẫu đã học (dùng cho reservoir sampling)
+    rng_state: u32,        // Trạng thái bộ sinh số ngẫu nhiên xorshift32 (không cần thư viện, port được xuống MCU)
 }
 
 impl MemoryManager {
+    // Mặc định: R được dùng tối đa một nửa ngân sách, phần còn lại dành cho P và Q
     pub fn new(max_memory_bytes: usize) -> Self {
+        Self::with_r_capacity(max_memory_bytes, max_memory_bytes / SAMPLE_SIZE_BYTES / 2)
+    }
+
+    pub fn with_r_capacity(max_memory_bytes: usize, r_capacity: usize) -> Self {
         Self {
             p_queue: Vec::new(),
-            q_queue: Vec::new(),
+            q_queue: VecDeque::new(),
             r_queue: Vec::new(),
             max_memory_bytes,
+            r_capacity,
+            r_seen: 0,
+            rng_state: 0x9E37_79B9,
         }
     }
 
@@ -71,22 +87,49 @@ impl MemoryManager {
             let mut sample = self.p_queue.remove(pos);
             sample.label = Some(label);
             sample.status = SampleStatus::Q;
-            self.q_queue.push(sample);
+            self.q_queue.push_back(sample);
             Ok(())
         } else {
             Err("[MEMSIM][ERROR] Khong tim thay ID trong P")
         }
     }
 
-    // Lấy mẫu từ Q để train, sau đó đưa vào R
+    // Loại các mẫu chờ nhãn quá lâu (nhãn có thể không bao giờ đến). Trả về số mẫu bị loại.
+    pub fn expire_pending(&mut self, now: u64, ttl: u64) -> usize {
+        let before = self.p_queue.len();
+        self.p_queue.retain(|s| now.saturating_sub(s.timestamp) <= ttl);
+        before - self.p_queue.len()
+    }
+
+    // Lấy mẫu từ Q (FIFO) để train, sau đó đưa vào R
     pub fn pop_for_training(&mut self) -> Option<Sample> {
-        if !self.q_queue.is_empty() {
-            let mut sample = self.q_queue.remove(0);
-            sample.status = SampleStatus::R;
-            self.r_queue.push(sample.clone());
-            Some(sample)
-        } else {
-            None
+        let mut sample = self.q_queue.pop_front()?;
+        sample.status = SampleStatus::R;
+        self.store_in_replay(sample.clone());
+        Some(sample)
+    }
+
+    // Reservoir sampling (Algorithm R): R không vượt quá r_capacity,
+    // và mỗi mẫu đã học đều có cùng xác suất r_capacity / r_seen được giữ lại
+    fn store_in_replay(&mut self, sample: Sample) {
+        self.r_seen += 1;
+        if self.r_queue.len() < self.r_capacity {
+            self.r_queue.push(sample);
+        } else if self.r_capacity > 0 {
+            let j = (self.next_rand() as u64 % self.r_seen) as usize;
+            if j < self.r_capacity {
+                self.r_queue[j] = sample;
+            }
         }
+    }
+
+    // xorshift32
+    fn next_rand(&mut self) -> u32 {
+        let mut x = self.rng_state;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.rng_state = x;
+        x
     }
 }
