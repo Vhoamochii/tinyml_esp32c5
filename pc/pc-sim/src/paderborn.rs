@@ -3,7 +3,8 @@
 
 use std::path::{Path, PathBuf};
 
-use tinyml_core::features::WINDOW_LEN;
+use tinyml_core::features::{extract, WINDOW_LEN};
+use tinyml_core::NUM_FEATURES;
 
 use crate::mat::{self, MatValue};
 
@@ -82,4 +83,34 @@ pub fn windows(signal: &[f32], count: usize) -> Vec<[f32; WINDOW_LEN]> {
             out
         })
         .collect()
+}
+
+/// Một bản ghi (một file .mat) đã cắt cửa sổ và tính 16 đặc trưng (chưa chuẩn hóa)
+pub struct Record {
+    pub bearing: &'static str,
+    pub class: u8,
+    pub measurement: u32,
+    pub features: Vec<[f32; NUM_FEATURES]>, // WINDOWS_PER_RECORD cửa sổ, theo thứ tự thời gian
+}
+
+/// Đọc các lần đo `measurements` của các ổ `bearings` ở chế độ `condition`
+pub fn load_records(
+    root: &Path,
+    condition: &str,
+    bearings: &[&'static str],
+    measurements: impl IntoIterator<Item = u32> + Clone,
+) -> Result<Vec<Record>, String> {
+    let mut out = Vec::new();
+    for &bearing in bearings {
+        let class = class_of(bearing).ok_or_else(|| format!("ma o {bearing} khong thuoc 3 lop"))?;
+        let before = out.len();
+        for measurement in measurements.clone() {
+            let path = measurement_path(root, condition, bearing, measurement);
+            let signal = read_vibration(&path)?;
+            let features = windows(&signal, WINDOWS_PER_RECORD).iter().map(extract).collect();
+            out.push(Record { bearing, class, measurement, features });
+        }
+        println!("[LOAD] {condition} {bearing}: {} ban ghi", out.len() - before);
+    }
+    Ok(out)
 }

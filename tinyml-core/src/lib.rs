@@ -10,6 +10,7 @@ pub mod head;
 pub mod learner;
 pub mod memsim;
 pub mod policy;
+pub mod pretrained;
 pub mod rng;
 pub mod schedule;
 pub mod selftest;

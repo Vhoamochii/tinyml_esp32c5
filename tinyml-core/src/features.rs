@@ -36,6 +36,13 @@ const BAND_EDGES: [usize; 7] = [1, 16, 32, 64, 128, 256, 513];
 
 const EPS: f32 = 1e-12;
 
+/// Chuẩn hóa tại chỗ: (z - trung bình) / độ lệch chuẩn, với hệ số tính trên tập huấn luyện
+pub fn normalize(z: &mut [f32; NUM_FEATURES], mean: &[f32; NUM_FEATURES], std: &[f32; NUM_FEATURES]) {
+    for ((v, m), s) in z.iter_mut().zip(mean.iter()).zip(std.iter()) {
+        *v = (*v - m) / s;
+    }
+}
+
 /// Tính 16 đặc trưng của một cửa sổ rung
 pub fn extract(x: &[f32; WINDOW_LEN]) -> [f32; NUM_FEATURES] {
     let n = WINDOW_LEN as f32;
