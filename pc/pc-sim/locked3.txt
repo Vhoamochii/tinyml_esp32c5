@@ -1,0 +1,73 @@
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `release` profile [optimized] target(s) in 0.66s
+     Running `target/release/pc-sim`
+[DEBUG][MAIN] PADERBORN, o cau hinh ["K004", "KI14", "KA16"] | luong: 720 cua so N15 + 900 cua so N09 | 180 cua so N15 de rieng | 5 hat giong ghep cap
+
+################ CHON TOC DO HOC | K = 25 o, M = 1944 byte | r = 0% | uu tien Q | Q toi da 9 | 2 luot hoc/buoc
+
+=== CHON LR | LICH TRA NHAN: RAI ===
+Toc do hoc | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+lr = 0.05  | C1 tat hoc lai |  94.67+-0.00 | 100.00 |  15.56+-0.00 |    468 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+lr = 0.1   | C1 tat hoc lai |  96.22+-0.00 | 100.00 |  13.89+-0.00 |    343 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+lr = 0.2   | C1 tat hoc lai |  97.11+-0.00 | 100.00 |  12.78+-0.00 |    343 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+lr = 0.3   | C1 tat hoc lai |  97.67+-0.00 | 100.00 |  13.89+-0.00 |    169 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+lr = 0.4   | C1 tat hoc lai |  97.56+-0.00 | 100.00 |  16.11+-0.00 |    169 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+lr = 0.05  | C2 R vao truoc |  95.96+-0.22 | 100.00 |  11.44+-1.95 |    355 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.1   | C2 R vao truoc |  96.91+-0.09 | 100.00 |  11.22+-1.49 |    335 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.2   | C2 R vao truoc |  97.38+-0.19 | 100.00 |  13.22+-1.69 |    169 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.3   | C2 R vao truoc |  97.69+-0.09 | 100.00 |  13.89+-1.57 |    197 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.4   | C2 R vao truoc |  97.98+-0.27 | 100.00 |  18.00+-2.62 |    198 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.05  | C3 reservoir   |  94.96+-0.37 | 100.00 |   4.67+-2.79 |    387 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.1   | C3 reservoir   |  96.16+-0.57 | 100.00 |   4.33+-3.99 |    360 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.2   | C3 reservoir   |  97.27+-0.39 | 100.00 |   3.56+-2.88 |    287 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.3   | C3 reservoir   |  97.64+-0.34 | 100.00 |   3.00+-2.56 |    263 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+lr = 0.4   | C3 reservoir   |  97.98+-0.25 | 100.00 |   2.78+-2.39 |    227 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+
+=== CHON LR | LICH TRA NHAN: THEO DOT ===
+Toc do hoc | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+lr = 0.05  | C1 tat hoc lai |  94.22+-0.00 | 100.00 |  15.00+-0.00 |    468 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+lr = 0.1   | C1 tat hoc lai |  95.89+-0.00 | 100.00 |  10.56+-0.00 |    415 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+lr = 0.2   | C1 tat hoc lai |  96.56+-0.00 | 100.00 |  12.78+-0.00 |    375 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+lr = 0.3   | C1 tat hoc lai |  96.33+-0.00 | 100.00 |  16.11+-0.00 |    375 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+lr = 0.4   | C1 tat hoc lai |  96.22+-0.00 | 100.00 |  20.00+-0.00 |    384 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+lr = 0.05  | C2 R vao truoc |  95.84+-0.15 | 100.00 |  11.67+-2.15 |    357 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.1   | C2 R vao truoc |  96.51+-0.10 | 100.00 |  12.89+-2.06 |    362 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.2   | C2 R vao truoc |  96.80+-0.14 | 100.00 |  16.89+-1.95 |    327 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.3   | C2 R vao truoc |  96.93+-0.19 | 100.00 |  20.22+-1.01 |    217 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.4   | C2 R vao truoc |  97.16+-0.23 | 100.00 |  22.33+-2.02 |    217 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.05  | C3 reservoir   |  94.53+-0.20 | 100.00 |   5.33+-3.39 |    447 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.1   | C3 reservoir   |  95.98+-0.18 | 100.00 |   4.78+-4.17 |    343 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.2   | C3 reservoir   |  96.60+-0.37 | 100.00 |   4.44+-4.81 |    350 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.3   | C3 reservoir   |  96.78+-0.52 | 100.00 |   4.33+-4.87 |    341 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+lr = 0.4   | C3 reservoir   |  96.84+-0.51 | 100.00 |   4.33+-5.41 |    349 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+
+=== TONG HOP LR (trung binh 3 case x 2 lich tra nhan x 5 hat giong) ===
+[LR] lr = 0.05  | BA moi TB =  95.03 | Quen TB =  10.61
+[LR] lr = 0.1   | BA moi TB =  96.28 | Quen TB =   9.61
+[LR] lr = 0.2   | BA moi TB =  96.95 | Quen TB =  10.61
+[LR] lr = 0.3   | BA moi TB =  97.17 | Quen TB =  11.91
+[LR] lr = 0.4   | BA moi TB =  97.29 | Quen TB =  13.93
+[LR] BA moi tot nhat = 97.29 -> chon lr NHO NHAT co BA moi >= 96.79: lr = 0.2
+
+################ BANG CHOT TREN TAP CHON CAU HINH, lr = 0.2 | K = 25 o, M = 1944 byte | r = 0% | uu tien Q | Q toi da 9 | 2 luot hoc/buoc
+
+=== BANG CHOT | LICH TRA NHAN: RAI ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+RAI        | chi pretrain   |  36.67+-0.00 |  33.33 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C1 tat hoc lai |  97.11+-0.00 | 100.00 |  12.78+-0.00 |    343 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C2 R vao truoc |  97.38+-0.19 | 100.00 |  13.22+-1.69 |    169 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+RAI        | C3 reservoir   |  97.27+-0.39 | 100.00 |   3.56+-2.88 |    287 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+
+=== BANG CHOT | LICH TRA NHAN: THEO DOT ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+THEO DOT   | chi pretrain   |  36.67+-0.00 |  33.33 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C1 tat hoc lai |  96.56+-0.00 | 100.00 |  12.78+-0.00 |    375 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C2 R vao truoc |  96.80+-0.14 | 100.00 |  16.89+-1.95 |    327 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+THEO DOT   | C3 reservoir   |  96.60+-0.37 | 100.00 |   4.44+-4.81 |    350 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+
+C1 = hoc tren thiet bi, tat hoc lai | C2 = hoc lai, R vao truoc ra truoc (de cuong) | C3 = hoc lai, R reservoir
+a+-b = trung binh +- do lech chuan giua 5 hat giong.
+BA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).
+BA cu = BA tren cac cua so N15 de rieng, ngay truoc khi doi toc do.
+Quen = BA cu - BA tren cung cac cua so do sau thich nghi (diem %).
+Phuc hoi = so cua so toc do moi de BA truot (96 cua so) tro ve muc truoc khi doi.
