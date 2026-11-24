@@ -7,8 +7,9 @@
 //   - Lần đo 17-20 ở tốc độ cũ để riêng đo mức quên, không vào luồng học.
 //   - Đặc trưng chuẩn hóa và lớp cuối khởi đầu bằng kết quả pretrain (tinyml-core/src/pretrained.rs).
 // Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
-// Thí nghiệm: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại, mốc "chỉ pretrain" (không cập nhật);
-// hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q); 5 hạt giống ghép cặp.
+// Thí nghiệm: quét số ô K (tức dung lượng M), với mỗi K: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại,
+// mốc "chỉ pretrain" (không cập nhật); hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
+// 5 hạt giống ghép cặp.
 //   cargo run --release --bin pc-sim
 
 use std::collections::VecDeque;
@@ -25,10 +26,9 @@ use tinyml_core::{NUM_CLASSES, NUM_FEATURES};
 
 type Features = [f32; NUM_FEATURES];
 
-// Giới hạn bộ nhớ: K = floor((M - H) / s)
-const MEMORY_BYTES: usize = 2000; // M (tạm, chờ đo RAM khả dụng trên bo)
-const K: usize = slots_for_budget(MEMORY_BYTES, MANAGEMENT_BYTES);
-const Q_MAX: u32 = 8; // Giới hạn Q (tạm)
+// Giới hạn bộ nhớ: K = floor((M - H) / s). Quét K = 12, 15, 20, 25 trong main() để tìm vùng bộ nhớ
+// đủ chật cho r có tác dụng; M tương ứng = K·s + H.
+const Q_MAX: u32 = 9; // Giới hạn Q (tạm): bằng một đợt nhãn, để đợt nhãn không tự mất 1 nhãn
 const UPDATES_PER_STEP: u32 = 2; // Số lượt học mỗi bước, thay cho giới hạn thời gian mỗi bước (tạm)
 const LEARNING_RATE: f32 = 0.1;
 
@@ -143,6 +143,7 @@ fn heldout_ba(head: &Head<NUM_CLASSES>, heldout: &[(u8, Features)]) -> f32 {
 #[derive(Default, Clone, Copy)]
 struct RunStats {
     ba_new: f32,
+    ba_old_before: f32, // BA trên các cửa sổ N15 để riêng, ngay trước khi đổi tốc độ
     forgetting: f32,
     recovery: Option<u32>,
     labels_arrived: u32,
@@ -156,8 +157,8 @@ struct RunStats {
     left_in_q: u32,
 }
 
-fn run(data: &Dataset, labels: LabelSchedule, cfg: Config) -> RunStats {
-    let mut learner: Learner<K, NUM_CLASSES> = Learner::new(&cfg);
+fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> RunStats {
+    let mut learner: Learner<N, NUM_CLASSES> = Learner::new(&cfg);
     learner.head = pretrained::head(); // Trọng số ban đầu chung cho mọi lần chạy
     let n = data.stream.len() as u32;
 
@@ -229,6 +230,7 @@ fn run(data: &Dataset, labels: LabelSchedule, cfg: Config) -> RunStats {
     }
 
     st.ba_new = balanced_accuracy(new_speed_results.iter());
+    st.ba_old_before = before_switch.map_or(0.0, |(_, ba_old)| ba_old);
     st.forgetting = before_switch.map_or(0.0, |(_, ba_old)| ba_old - heldout_ba(&learner.head, &data.heldout_old));
     st.recovery = recovery;
     st.labels_arrived = labels_arrived;
@@ -258,24 +260,40 @@ fn main() {
         data.heldout_old.len(),
         SEEDS.len()
     );
+
+    sweep::<12>(&data);
+    sweep::<15>(&data);
+    sweep::<20>(&data);
+    sweep::<25>(&data);
+
+    println!("\nBA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).");
+    println!("BA cu = BA tren cac cua so N15 de rieng, ngay truoc khi doi toc do.");
+    println!("Quen = BA cu - BA tren cung cac cua so do sau thich nghi (diem %).");
+    println!("Phuc hoi = so cua so toc do moi de BA truot ({} cua so) tro ve muc truoc khi doi.", SLIDING_WINDOWS);
+}
+
+/// Toàn bộ bảng thí nghiệm với K = N ô
+fn sweep<const N: usize>(data: &Dataset) {
+    let memory = N * SLOT_SIZE_BYTES + MANAGEMENT_BYTES;
+    assert_eq!(slots_for_budget(memory, MANAGEMENT_BYTES), N);
     println!(
-        "[DEBUG][MAIN] s = {} byte/o, M = {} byte, H = {} byte -> K = {} o | Q toi da {} | {} luot hoc/buoc | lr = {}",
-        SLOT_SIZE_BYTES, MEMORY_BYTES, MANAGEMENT_BYTES, K, Q_MAX, UPDATES_PER_STEP, LEARNING_RATE
+        "\n################ K = {} o | M = {} byte (s = {} byte/o, H = {} byte) | Q toi da {} | {} luot hoc/buoc | lr = {}",
+        N, memory, SLOT_SIZE_BYTES, MANAGEMENT_BYTES, Q_MAX, UPDATES_PER_STEP, LEARNING_RATE
     );
 
     let variants = [
         Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false },
         Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false, learn: true },
         Variant { name: "r = 0%", r_protected: 0, replay_enabled: true, learn: true },
-        Variant { name: "r = 25%", r_protected: (K * 25 / 100) as u32, replay_enabled: true, learn: true },
-        Variant { name: "r = 50%", r_protected: (K * 50 / 100) as u32, replay_enabled: true, learn: true },
+        Variant { name: "r = 25%", r_protected: (N * 25 / 100) as u32, replay_enabled: true, learn: true },
+        Variant { name: "r = 50%", r_protected: (N * 50 / 100) as u32, replay_enabled: true, learn: true },
     ];
 
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
-        println!("\n=== LICH TRA NHAN: {} (trung binh {} hat giong) ===", labels.name(), SEEDS.len());
+        println!("\n=== K = {} | LICH TRA NHAN: {} (trung binh {} hat giong) ===", N, labels.name(), SEEDS.len());
         println!(
-            "{:<10} | {:<12} | {:>6} | {:>6} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
-            "Lich hoc", "Bien the", "BA moi", "Quen", "Phuc hoi", "Khop", "Bo P", "Bo Q", "Khong o", "Hoc dau", "Hoc lai", "Cho TB"
+            "{:<10} | {:<12} | {:>6} | {:>6} | {:>6} | {:>12} | {:>6} | {:>5} | {:>5} | {:>7} | {:>7} | {:>7} | {:>6}",
+            "Lich hoc", "Bien the", "BA moi", "BA cu", "Quen", "Phuc hoi", "Khop", "Bo P", "Bo Q", "Khong o", "Hoc dau", "Hoc lai", "Cho TB"
         );
         for schedule in [Schedule::Interleaved, Schedule::QPriority] {
             for v in &variants {
@@ -290,16 +308,13 @@ fn main() {
                             lr: if v.learn { LEARNING_RATE } else { 0.0 },
                             seed,
                         };
-                        run(&data, labels, cfg)
+                        run::<N>(data, labels, cfg)
                     })
                     .collect();
                 print_row(schedule, v.name, &runs);
             }
         }
     }
-    println!("\nBA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).");
-    println!("Quen = BA N15 de rieng ngay truoc khi doi toc do - BA sau thich nghi (diem %).");
-    println!("Phuc hoi = so cua so toc do moi de BA truot ({} cua so) tro ve muc truoc khi doi.", SLIDING_WINDOWS);
 }
 
 fn print_row(schedule: Schedule, variant: &str, runs: &[RunStats]) {
@@ -319,10 +334,11 @@ fn print_row(schedule: Schedule, variant: &str, runs: &[RunStats]) {
         Schedule::QPriority => "uu tien Q",
     };
     println!(
-        "{:<10} | {:<12} | {:>6.2} | {:>6.2} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
+        "{:<10} | {:<12} | {:>6.2} | {:>6.2} | {:>6.2} | {:>12} | {:>5.1}% | {:>5.0} | {:>5.0} | {:>7.0} | {:>7.0} | {:>7.0} | {:>6.2}",
         schedule_name,
         variant,
         mean(&|r| r.ba_new),
+        mean(&|r| r.ba_old_before),
         mean(&|r| r.forgetting),
         recovery,
         match_rate,
