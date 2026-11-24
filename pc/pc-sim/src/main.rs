@@ -9,7 +9,8 @@
 // Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
 // Mặc định: cấu hình đã khóa (K = 25, r = 0%, ưu tiên Q, Q tối đa 9) với 3 phương án nhóm chốt:
 //   Case 1 = tắt học lại, Case 2 = R vào trước ra trước (luật đề cương), Case 3 = R reservoir.
-//   In (1) bảng chọn tốc độ học lr và (2) bảng chốt trên tập chọn cấu hình, có độ lệch chuẩn giữa 5 hạt giống.
+//   In (1) bảng chọn tốc độ học lr, tự chọn lr theo luật ở choose_learning_rate, và (2) bảng chốt trên tập
+//   chọn cấu hình với lr đã chọn; có độ lệch chuẩn giữa 5 hạt giống.
 // --sweep: thí nghiệm chọn cấu hình đầy đủ: quét K = 12, 15, 20, 25; r = 0%, 25%, 50% với cả hai luật R;
 //   hai lịch học (xen kẽ, ưu tiên Q). Cả hai chế độ đều chạy hai lịch trả nhãn (rải, theo đợt).
 //   cargo run --release --bin pc-sim
@@ -34,13 +35,13 @@ type Features = [f32; NUM_FEATURES];
 // đủ chật cho r có tác dụng; M tương ứng = K·s + H.
 const Q_MAX: u32 = 9; // Giới hạn Q (tạm): bằng một đợt nhãn, để đợt nhãn không tự mất 1 nhãn
 const UPDATES_PER_STEP: u32 = 2; // Số lượt học mỗi bước, thay cho giới hạn thời gian mỗi bước (tạm)
-const LEARNING_RATE: f32 = 0.1; // Dùng cho --sweep và bảng chốt; chọn lại sau bảng CHON TOC DO HOC
+const LEARNING_RATE: f32 = 0.1; // Chỉ dùng cho --sweep (chế độ mặc định tự chọn lr trong LR_CANDIDATES)
 
 // Cấu hình đã khóa sau thí nghiệm chọn cấu hình (--sweep): r = 0% vì r lớn hơn không giảm quên mà chỉ
 // làm mất nhãn; ưu tiên Q vì chờ ngắn hơn, BA cao hơn ở lịch theo đợt; BA gần như không đổi theo K
 const LOCKED_K: usize = 25;
 const LOCKED_SCHEDULE: Schedule = Schedule::QPriority;
-const LR_CANDIDATES: [f32; 3] = [0.05, 0.1, 0.2];
+const LR_CANDIDATES: [f32; 5] = [0.05, 0.1, 0.2, 0.3, 0.4];
 
 // Luồng Paderborn
 const OLD_STREAM_MEASUREMENTS: (u32, u32) = (1, 16); // Tốc độ cũ, vào luồng học
@@ -309,8 +310,8 @@ fn main() {
         sweep::<20>(&data);
         sweep::<25>(&data);
     } else {
-        choose_learning_rate(&data);
-        locked_table(&data);
+        let lr = choose_learning_rate(&data);
+        locked_table(&data, lr);
     }
 
     println!("\nC1 = hoc tren thiet bi, tat hoc lai | C2 = hoc lai, R vao truoc ra truoc (de cuong) | C3 = hoc lai, R reservoir");
@@ -329,28 +330,53 @@ fn locked_banner(title: &str) {
     );
 }
 
-/// Đề cương: chọn tốc độ học trên tập chọn cấu hình, giữ cố định các yếu tố còn lại
-fn choose_learning_rate(data: &Dataset) {
+/// Đề cương: chọn tốc độ học trên tập chọn cấu hình, giữ cố định các yếu tố còn lại.
+/// Luật (cùng một lr cho cả 3 case để so sánh công bằng): BA mới trung bình cao nhất trên 3 case,
+/// 2 lịch trả nhãn và mọi hạt giống; bằng điểm thì quên trung bình thấp hơn, rồi lr nhỏ hơn.
+fn choose_learning_rate(data: &Dataset) -> f32 {
     locked_banner("CHON TOC DO HOC");
+    let mut summary: Vec<(f32, f32, f32)> = Vec::new(); // (lr, BA mới TB, quên TB)
+    let mut all_runs: Vec<Vec<RunStats>> = vec![Vec::new(); LR_CANDIDATES.len()];
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
         println!("\n=== CHON LR | LICH TRA NHAN: {} ===", labels.name());
         print_header("Toc do hoc");
         for case in &CASES {
-            for lr in LR_CANDIDATES {
-                print_row(&format!("lr = {lr}"), case.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, case, lr));
+            for (i, lr) in LR_CANDIDATES.iter().enumerate() {
+                let runs = run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, case, *lr);
+                print_row(&format!("lr = {lr}"), case.name, &runs);
+                all_runs[i].extend(runs);
             }
         }
     }
+
+    println!("\n=== TONG HOP LR (trung binh 3 case x 2 lich tra nhan x {} hat giong) ===", SEEDS.len());
+    for (lr, runs) in LR_CANDIDATES.iter().zip(&all_runs) {
+        let n = runs.len() as f32;
+        let ba = runs.iter().map(|r| r.ba_new).sum::<f32>() / n;
+        let forgetting = runs.iter().map(|r| r.forgetting).sum::<f32>() / n;
+        println!("[LR] lr = {lr:<5} | BA moi TB = {ba:6.2} | Quen TB = {forgetting:6.2}");
+        summary.push((*lr, ba, forgetting));
+    }
+    // LR_CANDIDATES tăng dần, chỉ thay khi tốt hơn hẳn nên bằng điểm thì giữ lr nhỏ hơn
+    let mut best = summary[0];
+    for &cand in &summary[1..] {
+        if cand.1 > best.1 || (cand.1 == best.1 && cand.2 < best.2) {
+            best = cand;
+        }
+    }
+    let edge = if best.0 == LR_CANDIDATES[LR_CANDIDATES.len() - 1] { " (NAM O MEP LUOI: nen thu lr lon hon)" } else { "" };
+    println!("[LR] Chon lr = {}{edge}", best.0);
+    best.0
 }
 
 /// Bảng chốt trên tập chọn cấu hình: mốc chỉ pretrain và 3 phương án với cấu hình đã khóa
-fn locked_table(data: &Dataset) {
-    locked_banner(&format!("BANG CHOT TREN TAP CHON CAU HINH, lr = {LEARNING_RATE}"));
+fn locked_table(data: &Dataset, lr: f32) {
+    locked_banner(&format!("BANG CHOT TREN TAP CHON CAU HINH, lr = {lr}"));
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
         println!("\n=== BANG CHOT | LICH TRA NHAN: {} ===", labels.name());
         print_header("Lich nhan");
         for v in std::iter::once(&PRETRAIN_ONLY).chain(CASES.iter()) {
-            print_row(labels.name(), v.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, v, LEARNING_RATE));
+            print_row(labels.name(), v.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, v, lr));
         }
     }
 }
