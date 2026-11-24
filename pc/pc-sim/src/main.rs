@@ -13,8 +13,9 @@
 //   chọn cấu hình với lr đã chọn; có độ lệch chuẩn giữa 5 hạt giống.
 // --sweep: thí nghiệm chọn cấu hình đầy đủ: quét K = 12, 15, 20, 25; r = 0%, 25%, 50% với cả hai luật R;
 //   hai lịch học (xen kẽ, ưu tiên Q). Cả hai chế độ đều chạy hai lịch trả nhãn (rải, theo đợt).
-// --test: GIAI ĐOẠN KIỂM THỬ trên 6 ổ kiểm thử, chỉ chạy sau khi đã khóa cấu hình (kể cả lr = LOCKED_LR),
-//   không chọn lại gì trên dữ liệu kiểm thử. Hai luồng A, B, mỗi luồng một ổ mỗi lớp; báo theo từng ổ,
+// --test: GIAI ĐOẠN KIỂM THỬ trên 6 ổ kiểm thử. Trước tiên áp luật chọn lr đã khóa trên 3 ổ chọn cấu hình
+//   (khóa LUẬT, không khóa con số: nếu bộ trích xuất đổi thì lr được chọn lại đúng luật, chỉ trên tập cấu hình),
+//   rồi chạy 6 ổ kiểm thử với lr đó; không chọn lại gì trên dữ liệu kiểm thử. Hai luồng A, B, mỗi luồng một ổ mỗi lớp; báo theo từng ổ,
 //   rồi tổng hợp 6 ổ kèm độ phân tán giữa các ổ.
 //   cargo run --release --bin pc-sim
 //   cargo run --release --bin pc-sim -- --sweep
@@ -48,8 +49,6 @@ const LOCKED_SCHEDULE: Schedule = Schedule::QPriority;
 const LR_CANDIDATES: [f32; 5] = [0.05, 0.1, 0.2, 0.3, 0.4];
 /// Ngưỡng chọn lr: cỡ độ lệch chuẩn lớn nhất của BA mới giữa các hạt giống (điểm %)
 const LR_BA_TOLERANCE: f32 = 0.5;
-/// lr đã khóa: kết quả của choose_learning_rate trên 3 ổ chọn cấu hình. Giai đoạn kiểm thử chỉ dùng giá trị này
-const LOCKED_LR: f32 = 0.2;
 /// Giai đoạn kiểm thử: hai luồng, mỗi luồng một ổ khỏe, một ổ vòng trong, một ổ vòng ngoài (đúng thứ tự lớp 0, 1, 2)
 const TEST_STREAMS: [(&str, [&str; NUM_CLASSES]); 2] = [("A", ["K005", "KI18", "KA22"]), ("B", ["K006", "KI21", "KA30"])];
 
@@ -322,7 +321,11 @@ fn main() {
         std::process::exit(1);
     }
     if std::env::args().any(|a| a == "--test") {
-        test_phase();
+        // Luật chọn lr áp trên 3 ổ chọn cấu hình, không dùng dữ liệu kiểm thử
+        let config = load_dataset(&paderborn::CONFIG_BEARINGS);
+        print_data_header("o cau hinh", &paderborn::CONFIG_BEARINGS, &config);
+        let lr = choose_learning_rate(&config);
+        test_phase(lr);
     } else {
         let data = load_dataset(&paderborn::CONFIG_BEARINGS);
         print_data_header("o cau hinh", &paderborn::CONFIG_BEARINGS, &data);
@@ -419,11 +422,11 @@ fn locked_table(data: &Dataset, lr: f32) {
 /// Kết quả một ổ kiểm thử: (ổ, lớp, độ nhạy N09, quên), đã lấy trung bình theo hạt giống
 type BearingResult = (&'static str, u8, f32, f32);
 
-/// Giai đoạn kiểm thử (--test): 6 ổ kiểm thử, cấu hình đã khóa, lr = LOCKED_LR.
+/// Giai đoạn kiểm thử (--test): 6 ổ kiểm thử, cấu hình đã khóa, lr do luật chọn trên tập cấu hình.
 /// Đề cương: báo kết quả từng ổ và độ phân tán giữa các ổ; tổng hợp các lần chạy (hạt giống) trên cùng ổ
 /// trước khi so độ phân tán giữa ổ. BA = trung bình các ổ trong từng lớp rồi trung bình đều ba lớp.
-fn test_phase() {
-    locked_banner(&format!("KIEM THU 6 O, lr = {LOCKED_LR}"));
+fn test_phase(lr: f32) {
+    locked_banner(&format!("KIEM THU 6 O, lr = {lr} (chon tren tap cau hinh)"));
     let variants: Vec<&Variant> = std::iter::once(&PRETRAIN_ONLY).chain(CASES.iter()).collect();
     let label_schedules = [LabelSchedule::Spread, LabelSchedule::Burst];
     // per_bearing[lịch nhãn][phương án] = các (ổ, lớp, độ nhạy N09, quên), đã lấy trung bình theo hạt giống
@@ -440,7 +443,7 @@ fn test_phase() {
             print_header("Lich nhan");
             let mut details = Vec::new();
             for (vi, v) in variants.iter().enumerate() {
-                let runs = run_seeds::<LOCKED_K>(&data, *labels, LOCKED_SCHEDULE, v, LOCKED_LR);
+                let runs = run_seeds::<LOCKED_K>(&data, *labels, LOCKED_SCHEDULE, v, lr);
                 print_row(labels.name(), v.name, &runs);
                 let n = runs.len() as f32;
                 let mut cols = Vec::new();
@@ -459,7 +462,7 @@ fn test_phase() {
         }
     }
 
-    println!("\n################ TONG HOP 6 O KIEM THU | K = {LOCKED_K} o, r = 0%, {}, lr = {LOCKED_LR}", schedule_name(LOCKED_SCHEDULE));
+    println!("\n################ TONG HOP 6 O KIEM THU | K = {LOCKED_K} o, r = 0%, {}, lr = {lr}", schedule_name(LOCKED_SCHEDULE));
     for (li, labels) in label_schedules.iter().enumerate() {
         println!("\n=== TONG HOP | LICH TRA NHAN: {} ===", labels.name());
         println!(
