@@ -7,7 +7,7 @@
 use crate::event::{Event, EventKind};
 use crate::head::Head;
 use crate::memsim::MemoryPool;
-use crate::policy::MemoryPolicy;
+use crate::policy::{MemoryPolicy, Retention};
 use crate::schedule::{Pick, Schedule, Scheduler};
 use crate::NUM_FEATURES;
 
@@ -23,6 +23,7 @@ pub struct Config {
     pub replay_enabled: bool, // false = đối chứng tắt học lại
     pub lr: f32,              // Tốc độ học
     pub seed: u32,            // Hạt giống cho việc chọn mẫu học lại
+    pub retention: Retention, // Chọn mẫu R bị thu hồi (đề cương: Fifo)
 }
 
 pub struct Learner<const N: usize, const C: usize> {
@@ -38,7 +39,7 @@ impl<const N: usize, const C: usize> Learner<N, C> {
         Self {
             pool: MemoryPool::new(),
             head: Head::zeros(),
-            policy: MemoryPolicy { r_protected: cfg.r_protected, q_max: cfg.q_max },
+            policy: MemoryPolicy { r_protected: cfg.r_protected, q_max: cfg.q_max, retention: cfg.retention },
             scheduler: Scheduler::new(cfg.schedule, cfg.replay_enabled, N as u32, cfg.seed),
             lr: cfg.lr,
         }

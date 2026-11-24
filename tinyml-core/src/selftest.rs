@@ -6,6 +6,7 @@ use core::fmt;
 use crate::event::{Event, EventKind};
 use crate::learner::{Config, Learner};
 use crate::memsim::SlotState;
+use crate::policy::Retention;
 use crate::schedule::Schedule;
 use crate::{NUM_CLASSES, NUM_FEATURES};
 
@@ -129,6 +130,7 @@ pub fn run_epoch_matching<O: FnMut(fmt::Arguments<'_>)>(out: &mut O) -> bool {
         replay_enabled: false,
         lr: 0.1,
         seed: 1,
+        retention: Retention::Fifo,
     };
     let mut learner: Learner<N, NUM_CLASSES> = Learner::new(&cfg);
 

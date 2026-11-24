@@ -2,12 +2,13 @@
 use tinyml_core::event::{Event, EventKind};
 use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SlotState, SLOT_SIZE_BYTES};
+use tinyml_core::policy::Retention;
 use tinyml_core::rng::XorShift32;
 use tinyml_core::schedule::Schedule;
 use tinyml_core::{selftest, NUM_CLASSES, NUM_FEATURES};
 
 fn cfg(r_protected: u32, q_max: u32, schedule: Schedule, replay_enabled: bool) -> Config {
-    Config { r_protected, q_max, schedule, replay_enabled, lr: 0.1, seed: 7 }
+    Config { r_protected, q_max, schedule, replay_enabled, lr: 0.1, seed: 7, retention: Retention::Fifo }
 }
 
 fn z() -> [f32; NUM_FEATURES] {
@@ -212,6 +213,36 @@ fn test_replay_skips_last_learned_and_can_be_disabled() {
     l.train(0, 20, &mut log);
     assert_eq!(ev.iter().filter(|e| e.kind == EventKind::Replay).count(), 0);
     println!("[TEST][SCHEDULE][ReplayRules] PASS");
+}
+
+/// Chạy 1000 cửa sổ qua K = 16 ô, nhãn về ngay, học 1 lượt mỗi bước; trả về các ID còn trong R
+fn r_ids_after_stream(retention: Retention) -> Vec<u32> {
+    let mut learner: Learner<16, NUM_CLASSES> =
+        Learner::new(&Config { retention, ..cfg(0, 4, Schedule::QPriority, false) });
+    let mut ignore = |_e: Event| {};
+    for t in 0..1000 {
+        learner.on_window(t, t, z(), &mut ignore);
+        learner.on_label(t, t, 0, &mut ignore);
+        learner.train(t, 1, &mut ignore);
+    }
+    let pool = &learner.pool;
+    let mut ids: Vec<u32> = pool.indices(SlotState::R).map(|i| pool.slot(i).id).collect();
+    ids.sort();
+    ids
+}
+
+#[test]
+fn test_retention_fifo_vs_reservoir() {
+    println!("[TEST][POLICY][Retention] Bat dau...");
+    // Vào trước ra trước: R chỉ còn các mẫu mới nhất
+    let fifo = r_ids_after_stream(Retention::Fifo);
+    assert_eq!(fifo, (984..1000).collect::<Vec<u32>>(), "fifo: {fifo:?}");
+    // Reservoir: R rải khắp lịch sử (mô phỏng NumPy: 10/16 ID nhỏ hơn 500)
+    let reservoir = r_ids_after_stream(Retention::Reservoir);
+    assert_eq!(reservoir.len(), 16);
+    let old = reservoir.iter().filter(|&&id| id < 500).count();
+    assert!(old >= 5, "reservoir chi giu {old} mau cu: {reservoir:?}");
+    println!("[TEST][POLICY][Retention] fifo {fifo:?} | reservoir {reservoir:?} -> PASS");
 }
 
 #[test]

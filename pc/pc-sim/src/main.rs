@@ -8,7 +8,8 @@
 //   - Đặc trưng chuẩn hóa và lớp cuối khởi đầu bằng kết quả pretrain (tinyml-core/src/pretrained.rs).
 // Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
 // Thí nghiệm: quét số ô K (tức dung lượng M), với mỗi K: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại,
-// mốc "chỉ pretrain" (không cập nhật); hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
+// mốc "chỉ pretrain" (không cập nhật), và thí nghiệm phụ "reservoir" (R giữ mẫu ngẫu nhiên đều của cả lịch sử
+// thay cho vào trước ra trước, r = 0%); hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
 // 5 hạt giống ghép cặp.
 //   cargo run --release --bin pc-sim
 
@@ -20,6 +21,7 @@ use tinyml_core::features::normalize;
 use tinyml_core::head::Head;
 use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
 use tinyml_core::memsim::{slots_for_budget, SlotState, SLOT_SIZE_BYTES};
+use tinyml_core::policy::Retention;
 use tinyml_core::pretrained;
 use tinyml_core::schedule::Schedule;
 use tinyml_core::{NUM_CLASSES, NUM_FEATURES};
@@ -243,6 +245,7 @@ struct Variant {
     r_protected: u32,
     replay_enabled: bool,
     learn: bool, // false: tốc độ học 0, giữ nguyên trọng số pretrain (mốc so sánh)
+    retention: Retention,
 }
 
 fn main() {
@@ -282,11 +285,24 @@ fn sweep<const N: usize>(data: &Dataset) {
     );
 
     let variants = [
-        Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false },
-        Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false, learn: true },
-        Variant { name: "r = 0%", r_protected: 0, replay_enabled: true, learn: true },
-        Variant { name: "r = 25%", r_protected: (N * 25 / 100) as u32, replay_enabled: true, learn: true },
-        Variant { name: "r = 50%", r_protected: (N * 50 / 100) as u32, replay_enabled: true, learn: true },
+        Variant { name: "chi pretrain", r_protected: 0, replay_enabled: false, learn: false, retention: Retention::Fifo },
+        Variant { name: "tat hoc lai", r_protected: 0, replay_enabled: false, learn: true, retention: Retention::Fifo },
+        Variant { name: "r = 0%", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Fifo },
+        Variant {
+            name: "r = 25%",
+            r_protected: (N * 25 / 100) as u32,
+            replay_enabled: true,
+            learn: true,
+            retention: Retention::Fifo,
+        },
+        Variant {
+            name: "r = 50%",
+            r_protected: (N * 50 / 100) as u32,
+            replay_enabled: true,
+            learn: true,
+            retention: Retention::Fifo,
+        },
+        Variant { name: "reservoir", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Reservoir },
     ];
 
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {
@@ -307,6 +323,7 @@ fn sweep<const N: usize>(data: &Dataset) {
                             replay_enabled: v.replay_enabled,
                             lr: if v.learn { LEARNING_RATE } else { 0.0 },
                             seed,
+                            retention: v.retention,
                         };
                         run::<N>(data, labels, cfg)
                     })
