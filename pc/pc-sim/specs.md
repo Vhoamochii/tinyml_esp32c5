@@ -10,17 +10,17 @@ Hệ thống được thiết kế để chạy trên PC (bằng Rust) nhằm đ
 
 ## 2. Tech Stack
 - **Ngôn ngữ:** Rust (Edition 2021).
-- **Thư viện Neural Network:** ruv-fann (Phiên bản 0.2.3).
-- **Thư viện Benchmark:** criterion (đã cấu hình, sẽ dùng sau).
+- **Lõi dùng chung:** crate `tinyml-core` (`../../tinyml-core`, `no_std`, không heap), cùng mã với firmware. Không dùng thư viện mạng nơ-ron ngoài.
+- **Thư viện Benchmark:** criterion (dev-dependency, sẽ dùng sau).
 - **Môi trường:** Ubuntu + Vim.
 
 ## 3. Các quyết định thiết kế quan trọng
-- **Quản lý bộ nhớ (memsim.rs):** Ước tính 1 mẫu = 80 bytes (bao gồm ID, 16 features, label, status, timestamp). Tổng bộ nhớ được giới hạn (ví dụ: 2000 bytes) để mô phỏng RAM hạn chế của vi điều khiển.
-- **Mạng Nơ-ron (main.rs):** Sử dụng cấu trúc 16 Input - 8 Hidden - 3 Output. Hàm kích hoạt `Tanh` cho lớp ẩn và `Sigmoid` cho lớp Output để ổn định quá trình lan truyền ngược.
-- **Kiểm thử độc lập (tests/memsim_test.rs):** Tuân thủ nguyên tắc tách biệt logic quản lý bộ nhớ và kiểm thử các edge case (Happy path, Overflow, Invalid ID) trước khi tích hợp.
+- **Chia vai:** `pc-sim` chỉ là phía PC (sinh dữ liệu, giữ nhãn đúng, hẹn giờ trả nhãn, chấm điểm). Phía thiết bị (vùng nhớ, chính sách, lớp cuối) nằm trong `tinyml-core` để PC và bo chạy cùng một mã.
+- **Vùng nhớ (`tinyml-core/src/memsim.rs`):** N ô cố định, mỗi mẫu chiếm một ô, trạng thái ô đổi tại chỗ Trống → P → Q → R → Trống. Kích thước ô lấy bằng `size_of` (hiện 80 byte); 2000 byte → 25 ô.
+- **Chính sách (`tinyml-core/src/policy.rs`):** tạm thời (TTL cho P, R tối đa nửa số ô + reservoir sampling). Đối chứng và chính sách thích ứng của báo cáo sẽ là các module cùng vai trò.
+- **Lớp cuối (`tinyml-core/src/head.rs`):** chỉ học lớp cuối 16 → 3 (softmax + cross-entropy, SGD trên mẫu mới + replay); bộ trích xuất giữ cố định.
+- **Kiểm thử:** `tinyml-core/tests/core_test.rs` (happy path, overflow, invalid ID, giới hạn R, TTL, lớp cuối, bộ sinh ngẫu nhiên).
 
 ## 4. Cách cài đặt & chạy dự án
-Di chuyển vào thư mục `pc/pc-sim` và chạy các lệnh sau:
-- Build dự án: `cargo build`
-- Chạy mô phỏng luồng dữ liệu: `cargo run`
-- Chạy kiểm thử tự động: `cargo test`
+- Chạy mô phỏng: `cd pc/pc-sim && cargo run --release`
+- Chạy kiểm thử lõi: `cd tinyml-core && cargo test`

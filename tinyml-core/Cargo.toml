@@ -1,0 +1,8 @@
+[package]
+name = "tinyml-core"
+version = "0.1.0"
+edition = "2021"
+
+# Lõi no_std dùng chung cho bộ mô phỏng PC (pc/pc-sim) và firmware ESP32-C5 (embedded/firmware)
+[dependencies]
+libm = "0.2"
