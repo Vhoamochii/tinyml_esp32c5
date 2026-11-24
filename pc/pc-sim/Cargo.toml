@@ -9,6 +9,8 @@ default-run = "pc-sim"
 tinyml-core = { path = "../../tinyml-core" }
 # Giải nén zlib bên trong file .mat (thuần Rust)
 miniz_oxide = "0.9"
+# Cổng nối tiếp tới ESP32-C5 (chương trình stream); cùng thư viện espflash dùng. Tắt libudev (chỉ cần mở cổng)
+serialport = { version = "4", default-features = false }
 
 [dev-dependencies]
 criterion = "0.5"

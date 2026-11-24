@@ -7,10 +7,10 @@
 //      Mặc định: 300 C2 rai 11 0.1 cauhinh /dev/ttyUSB0. Luồng: cauhinh (K004, KI14, KA16), A hoặc B (6 ổ kiểm thử).
 // Cấu hình đã khóa giống pc-sim: K = 25, r = 0%, ưu tiên Q, Q tối đa 9, 2 lượt học mỗi bước.
 
-use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
-use std::process::Command;
+use std::io::{BufRead, BufReader, ErrorKind, Write};
 use std::time::{Duration, Instant};
+
+use serialport::{ClearBuffer, SerialPort};
 
 use pc_sim::paderborn;
 use tinyml_core::event::Event;
@@ -37,36 +37,67 @@ fn fail(msg: &str) -> ! {
     std::process::exit(1);
 }
 
-/// Đặt tốc độ và chế độ thô cho cổng; `timeout_ds` = thời gian chờ mỗi lần đọc (phần mười giây)
-fn stty(port: &str, baud: u32, timeout_ds: u8) {
-    let ok = Command::new("stty")
-        .args(["-F", port, &baud.to_string(), "raw", "-echo", "-hupcl", "min", "0", "time", &timeout_ds.to_string()])
-        .status()
-        .is_ok_and(|s| s.success());
-    if !ok {
-        fail(&format!("stty khong dat duoc {baud} baud cho {port}"));
+/// Cổng nối tiếp, đọc qua bộ đệm dòng; ghi bằng `get_mut()`
+type Port = BufReader<Box<dyn SerialPort>>;
+
+/// Mở cổng giống espflash: thư viện serialport, rồi thả DTR và RTS. Trên DevKit, hai đường này nối vào
+/// EN (reset) và IO0 của ESP32 qua mạch tự reset; để mặc định khi mở cổng có thể giữ chip ở trạng thái reset
+fn open_port(path: &str, baud: u32) -> Port {
+    let mut port = serialport::new(path, baud)
+        .timeout(Duration::from_millis(50))
+        .open()
+        .unwrap_or_else(|e| fail(&format!("mo {path}: {e}")));
+    let _ = port.write_data_terminal_ready(false);
+    let _ = port.write_request_to_send(false);
+    BufReader::new(port)
+}
+
+/// Đổi tốc độ cổng (trên cùng một lần mở) và bỏ dữ liệu cũ nhận ở tốc độ trước
+fn set_baud(port: &mut Port, baud: u32) {
+    port.get_mut().set_baud_rate(baud).unwrap_or_else(|e| fail(&format!("dat {baud} baud: {e}")));
+    let _ = port.get_mut().clear(ClearBuffer::Input);
+    let stale = port.buffer().len();
+    port.consume(stale);
+}
+
+/// Ghi hết dữ liệu ra cổng
+fn send(port: &mut Port, data: &[u8]) {
+    let p = port.get_mut();
+    if p.write_all(data).and_then(|_| p.flush()).is_err() {
+        fail("ghi cong loi");
     }
 }
 
-/// Một dòng từ bo (bỏ ký tự cuối dòng); None nếu hết thời gian chờ
-fn read_line(reader: &mut BufReader<File>) -> Option<String> {
+/// Một dòng từ bo (bỏ ký tự cuối dòng). Hết thời gian chờ của một lần đọc thì đọc tiếp tới khi đủ `timeout`;
+/// None nếu hết hạn mà chưa có gì, hoặc trả phần dòng đang dở
+fn read_line(port: &mut Port, timeout: Duration) -> Option<String> {
+    let start = Instant::now();
     let mut buf = Vec::new();
-    match reader.read_until(b'\n', &mut buf) {
-        Ok(0) => None,
-        Ok(_) => Some(String::from_utf8_lossy(&buf).trim_end().to_string()),
-        Err(e) => fail(&format!("doc cong loi: {e}")),
+    loop {
+        match port.read_until(b'\n', &mut buf) {
+            Ok(_) if buf.last() == Some(&b'\n') => break,
+            Ok(_) => std::thread::sleep(Duration::from_millis(1)),
+            Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
+            Err(e) => fail(&format!("doc cong loi: {e}")),
+        }
+        if start.elapsed() >= timeout {
+            break;
+        }
+    }
+    if buf.is_empty() {
+        None
+    } else {
+        Some(String::from_utf8_lossy(&buf).trim_end().to_string())
     }
 }
 
-/// Gửi `cmd` lặp lại cho tới khi nhận dòng bắt đầu bằng `want`
-fn handshake(reader: &mut BufReader<File>, writer: &mut File, cmd: u8, want: &str, tries: u32) -> bool {
+/// Gửi `cmd` lặp lại (mỗi lần chờ 1 s) cho tới khi nhận dòng bắt đầu bằng `want`; in các dòng khác của bo
+fn handshake(port: &mut Port, cmd: u8, want: &str, tries: u32) -> bool {
     for _ in 0..tries {
-        if writer.write_all(&[cmd]).and_then(|_| writer.flush()).is_err() {
-            fail("ghi cong loi");
-        }
+        send(port, &[cmd]);
         let start = Instant::now();
-        while start.elapsed() < Duration::from_secs(1) {
-            match read_line(reader) {
+        while let Some(remaining) = Duration::from_secs(1).checked_sub(start.elapsed()) {
+            match read_line(port, remaining) {
                 Some(line) if line.starts_with(want) => return true,
                 Some(line) if !line.is_empty() => println!("[BO] {line}"),
                 Some(_) => {}
@@ -163,23 +194,26 @@ fn main() {
     }
 
     // --- Mở cổng và bắt tay ---
-    stty(&port, protocol::BOOT_BAUD, 10);
-    let file = OpenOptions::new().read(true).write(true).open(&port).unwrap_or_else(|e| fail(&format!("mo {port}: {e}")));
-    let mut writer = file.try_clone().unwrap_or_else(|e| fail(&format!("{e}")));
-    let mut reader = BufReader::new(file);
-    println!("[STREAM] Bat tay o {} baud (bo co the dang khoi dong lai)...", protocol::BOOT_BAUD);
-    if !handshake(&mut reader, &mut writer, protocol::CMD_GO, "[STREAM] BAUD", 30) {
-        fail("bo khong tra loi: da nap firmware moi va thoat espflash monitor chua?");
+    // Thử tốc độ cao trước: bo có thể đã ở FAST_BAUD từ lần chạy trước. Nếu không, bắt tay từ BOOT_BAUD.
+    let mut reader = open_port(&port, protocol::FAST_BAUD);
+    println!("[STREAM] Thu lien lac o {} baud...", protocol::FAST_BAUD);
+    if !handshake(&mut reader, protocol::CMD_PING, "[STREAM] OK", 2) {
+        set_baud(&mut reader, protocol::BOOT_BAUD);
+        println!("[STREAM] Bat tay o {} baud (bo co the dang khoi dong lai)...", protocol::BOOT_BAUD);
+        if !handshake(&mut reader, protocol::CMD_GO, "[STREAM] BAUD", 30) {
+            fail("bo khong tra loi: da nap firmware moi va thoat espflash monitor chua?");
+        }
+        std::thread::sleep(Duration::from_millis(100));
+        set_baud(&mut reader, protocol::FAST_BAUD);
+        if !handshake(&mut reader, protocol::CMD_PING, "[STREAM] OK", 10) {
+            fail(&format!("khong lien lac duoc o {} baud", protocol::FAST_BAUD));
+        }
     }
-    std::thread::sleep(Duration::from_millis(100));
-    stty(&port, protocol::FAST_BAUD, 50);
-    if !handshake(&mut reader, &mut writer, protocol::CMD_PING, "[STREAM] OK", 10) {
-        fail(&format!("khong lien lac duoc o {} baud", protocol::FAST_BAUD));
-    }
+    println!("[STREAM] Da lien lac o {} baud", protocol::FAST_BAUD);
     let mut frame = vec![protocol::CMD_CONFIG];
     frame.extend_from_slice(&protocol::encode_config(&cfg, UPDATES_PER_STEP));
-    writer.write_all(&frame).unwrap_or_else(|e| fail(&format!("{e}")));
-    match read_line(&mut reader) {
+    send(&mut reader, &frame);
+    match read_line(&mut reader, Duration::from_secs(5)) {
         Some(line) if line.starts_with("[STREAM] CONFIG OK") && line.contains(&format!("K={K} ")) => println!("{line}"),
         other => fail(&format!("bo khong nhan cau hinh: {other:?}")),
     }
@@ -227,12 +261,12 @@ fn main() {
             frame.extend_from_slice(&v.to_le_bytes());
         }
         let sent = Instant::now();
-        writer.write_all(&frame).and_then(|_| writer.flush()).unwrap_or_else(|e| fail(&format!("{e}")));
+        send(&mut reader, &frame);
 
         // Kết quả của bo: các dòng [EVT], kết thúc bằng [STEP]
         let mut got: Vec<String> = Vec::new();
         let step_line = loop {
-            match read_line(&mut reader) {
+            match read_line(&mut reader, Duration::from_secs(10)) {
                 Some(line) if line.starts_with("[STEP]") => break line,
                 Some(line) if line.starts_with("[EVT]") => got.push(line),
                 Some(line) if !line.is_empty() => println!("[BO] {line}"),
