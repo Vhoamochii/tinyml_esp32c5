@@ -208,13 +208,16 @@ fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
     }
 }
 
-/// Đọc đủ `buf.len()` byte (chặn tới khi có dữ liệu); false nếu UART báo lỗi
+/// Đọc đủ `buf.len()` byte (chặn tới khi có dữ liệu); false nếu UART báo lỗi (lỗi được in ra cho PC thấy)
 fn uart_read_exact(uart: &mut Uart<'_, Blocking>, buf: &mut [u8]) -> bool {
     let mut filled = 0;
     while filled < buf.len() {
         match uart.read(&mut buf[filled..]) {
             Ok(n) => filled += n,
-            Err(_) => return false,
+            Err(e) => {
+                let _ = writeln!(UartText(uart), "[STREAM][LOI] nhan UART: {:?} (da nhan {}/{} byte)", e, filled, buf.len());
+                return false;
+            }
         }
     }
     true
@@ -280,7 +283,14 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                         let mut l = Learner::new(&cfg);
                         l.head = pretrained::head();
                         learner = Some((l, updates));
-                        let _ = writeln!(UartText(&mut uart), "[STREAM] CONFIG OK K={} H={} ", LOCKED_K, MANAGEMENT_BYTES);
+                        let _ = writeln!(
+                            UartText(&mut uart),
+                            "[STREAM] CONFIG OK K={} H={} W=0x{:08x} pretrain={}",
+                            LOCKED_K,
+                            MANAGEMENT_BYTES,
+                            protocol::pretrained_fingerprint(),
+                            pretrained::AVAILABLE
+                        );
                     }
                     None => uart_write_all(&mut uart, b"[STREAM] CONFIG LOI\n"),
                 }
@@ -346,6 +356,7 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                     pred
                 };
                 let learn_us = micros_since(t1);
+                let sum = protocol::fnv1a(&samples);
 
                 // Gửi kết quả sau khi đã đo xong
                 for e in &events[..count] {
@@ -356,11 +367,12 @@ fn stream_mode(mut uart: Uart<'_, Blocking>) -> ! {
                 }
                 let _ = writeln!(
                     UartText(&mut uart),
-                    "[STEP] step={} pred={} ext_us={} learn_us={}",
+                    "[STEP] step={} pred={} ext_us={} learn_us={} sum={}",
                     step,
                     pred,
                     ext_us,
-                    learn_us
+                    learn_us,
+                    sum
                 );
             }
             _ => {} // Bỏ qua byte lạ (ví dụ CMD_GO thừa từ lúc bắt tay)

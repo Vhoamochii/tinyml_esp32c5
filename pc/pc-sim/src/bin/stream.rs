@@ -214,7 +214,16 @@ fn main() {
     frame.extend_from_slice(&protocol::encode_config(&cfg, UPDATES_PER_STEP));
     send(&mut reader, &frame);
     match read_line(&mut reader, Duration::from_secs(5)) {
-        Some(line) if line.starts_with("[STREAM] CONFIG OK") && line.contains(&format!("K={K} ")) => println!("{line}"),
+        Some(line) if line.starts_with("[STREAM] CONFIG OK") && line.contains(&format!("K={K} ")) => {
+            println!("{line}");
+            // Trọng số pretrain trong firmware phải giống hệt bản trên Ubuntu
+            let mine = format!("W=0x{:08x}", protocol::pretrained_fingerprint());
+            if !line.contains(&mine) {
+                fail(&format!(
+                    "trong so pretrain tren bo khac Ubuntu (Ubuntu {mine}): nap lai firmware sau khi chay pretrain"
+                ));
+            }
+        }
         other => fail(&format!("bo khong nhan cau hinh: {other:?}")),
     }
 
@@ -260,6 +269,7 @@ fn main() {
         for v in window {
             frame.extend_from_slice(&v.to_le_bytes());
         }
+        let expected_sum = protocol::fnv1a(&frame[frame.len() - protocol::SAMPLE_BYTES..]);
         let sent = Instant::now();
         send(&mut reader, &frame);
 
@@ -275,6 +285,9 @@ fn main() {
             }
         };
         wall_us.push(sent.elapsed().as_micros() as u32);
+        if field(&step_line, "sum") != Some(expected_sum) {
+            fail(&format!("du lieu hong tren duong truyen o buoc {step}: bo bao '{step_line}', PC gui sum={expected_sum}"));
+        }
         let board_pred = field(&step_line, "pred");
         let (e_us, l_us) = (field(&step_line, "ext_us").unwrap_or(0), field(&step_line, "learn_us").unwrap_or(0));
         ext_us.push(e_us);

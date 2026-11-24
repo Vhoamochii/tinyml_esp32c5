@@ -4,10 +4,11 @@
 // Bắt tay ở BOOT_BAUD: PC gửi CMD_GO, bo trả "[STREAM] BAUD 921600" rồi đổi sang FAST_BAUD;
 // PC đổi theo và gửi CMD_PING, bo trả "[STREAM] OK". Sau đó:
 //   CMD_CONFIG + CONFIG_LEN byte -> bo tạo lại Learner (bộ nhớ rỗng, trọng số pretrain),
-//                                   trả "[STREAM] CONFIG OK K=.. H=.."
+//                                   trả "[STREAM] CONFIG OK K=.. H=.. W=0x.." (W = pretrained_fingerprint)
 //   CMD_STEP + bước (u32) + số nhãn (u8) + mỗi nhãn (ID u32, nhãn u8) + WINDOW_LEN mẫu f32
 //                                -> bo trả các dòng [EVT] của bước (gửi SAU khi đo thời gian),
-//                                   rồi dòng "[STEP] step=.. pred=.. ext_us=.. learn_us=.."
+//                                   rồi dòng "[STEP] step=.. pred=.. ext_us=.. learn_us=.. sum=.."
+//                                   (sum = fnv1a của phần mẫu bo nhận được, để PC phát hiện dữ liệu hỏng)
 //   CMD_PING                     -> "[STREAM] OK"
 // Số nguyên và f32 theo thứ tự byte little-endian. Gửi f32 nguyên bản để đặc trưng trên bo khớp từng bit với PC.
 // Không phát theo thời gian thực (UART không đủ băng thông cho 64 KB mỗi 256 ms): PC chờ dòng [STEP] rồi mới
@@ -16,6 +17,7 @@
 use crate::features::WINDOW_LEN;
 use crate::learner::Config;
 use crate::policy::Retention;
+use crate::pretrained;
 use crate::schedule::Schedule;
 
 pub const BOOT_BAUD: u32 = 115_200;
@@ -32,6 +34,37 @@ pub const CONFIG_LEN: usize = 24;
 pub const MAX_LABELS_PER_STEP: usize = 32;
 /// Số byte mẫu của một cửa sổ
 pub const SAMPLE_BYTES: usize = WINDOW_LEN * 4;
+
+const FNV_OFFSET: u32 = 0x811c_9dc5;
+const FNV_PRIME: u32 = 0x0100_0193;
+
+fn fnv_feed(mut h: u32, bytes: &[u8]) -> u32 {
+    for &b in bytes {
+        h ^= b as u32;
+        h = h.wrapping_mul(FNV_PRIME);
+    }
+    h
+}
+
+/// Mã kiểm tra FNV-1a 32 bit (kiểm tra khung mẫu đến nơi nguyên vẹn)
+pub fn fnv1a(data: &[u8]) -> u32 {
+    fnv_feed(FNV_OFFSET, data)
+}
+
+/// Dấu vân tay của trọng số pretrain đang được biên dịch vào (hệ số chuẩn hóa, W, b).
+/// PC và bo phải giống nhau; khác nghĩa là firmware được build với pretrained.rs khác.
+pub fn pretrained_fingerprint() -> u32 {
+    let mut h = FNV_OFFSET;
+    let values = pretrained::FEATURE_MEAN
+        .iter()
+        .chain(pretrained::FEATURE_STD.iter())
+        .chain(pretrained::WEIGHTS.iter().flatten())
+        .chain(pretrained::BIAS.iter());
+    for v in values {
+        h = fnv_feed(h, &v.to_bits().to_le_bytes());
+    }
+    h
+}
 
 /// Mã hóa cấu hình bộ học và số lượt học mỗi bước
 pub fn encode_config(cfg: &Config, updates_per_step: u32) -> [u8; CONFIG_LEN] {
