@@ -42,6 +42,8 @@ const LEARNING_RATE: f32 = 0.1; // Chỉ dùng cho --sweep (chế độ mặc đ
 const LOCKED_K: usize = 25;
 const LOCKED_SCHEDULE: Schedule = Schedule::QPriority;
 const LR_CANDIDATES: [f32; 5] = [0.05, 0.1, 0.2, 0.3, 0.4];
+/// Ngưỡng chọn lr: cỡ độ lệch chuẩn lớn nhất của BA mới giữa các hạt giống (điểm %)
+const LR_BA_TOLERANCE: f32 = 0.5;
 
 // Luồng Paderborn
 const OLD_STREAM_MEASUREMENTS: (u32, u32) = (1, 16); // Tốc độ cũ, vào luồng học
@@ -331,8 +333,10 @@ fn locked_banner(title: &str) {
 }
 
 /// Đề cương: chọn tốc độ học trên tập chọn cấu hình, giữ cố định các yếu tố còn lại.
-/// Luật (cùng một lr cho cả 3 case để so sánh công bằng): BA mới trung bình cao nhất trên 3 case,
-/// 2 lịch trả nhãn và mọi hạt giống; bằng điểm thì quên trung bình thấp hơn, rồi lr nhỏ hơn.
+/// Luật (cùng một lr cho cả 3 case để so sánh công bằng): tính BA mới trung bình trên 3 case, 2 lịch trả nhãn
+/// và mọi hạt giống; chọn lr NHỎ NHẤT có BA mới cách BA tốt nhất không quá LR_BA_TOLERANCE điểm.
+/// Lý do: BA bão hòa khi lr tăng (phần tăng thêm nhỏ hơn độ dao động giữa hạt giống) trong khi mức quên tăng
+/// ngày càng nhanh; luật "BA cao nhất" thuần túy luôn đẩy lr ra mép lưới (đã thấy ở lần chạy 0,05-0,4).
 fn choose_learning_rate(data: &Dataset) -> f32 {
     locked_banner("CHON TOC DO HOC");
     let mut summary: Vec<(f32, f32, f32)> = Vec::new(); // (lr, BA mới TB, quên TB)
@@ -357,16 +361,15 @@ fn choose_learning_rate(data: &Dataset) -> f32 {
         println!("[LR] lr = {lr:<5} | BA moi TB = {ba:6.2} | Quen TB = {forgetting:6.2}");
         summary.push((*lr, ba, forgetting));
     }
-    // LR_CANDIDATES tăng dần, chỉ thay khi tốt hơn hẳn nên bằng điểm thì giữ lr nhỏ hơn
-    let mut best = summary[0];
-    for &cand in &summary[1..] {
-        if cand.1 > best.1 || (cand.1 == best.1 && cand.2 < best.2) {
-            best = cand;
-        }
-    }
-    let edge = if best.0 == LR_CANDIDATES[LR_CANDIDATES.len() - 1] { " (NAM O MEP LUOI: nen thu lr lon hon)" } else { "" };
-    println!("[LR] Chon lr = {}{edge}", best.0);
-    best.0
+    // LR_CANDIDATES tăng dần nên phần tử đầu tiên đạt ngưỡng là lr nhỏ nhất
+    let best_ba = summary.iter().map(|s| s.1).fold(f32::MIN, f32::max);
+    let threshold = best_ba - LR_BA_TOLERANCE;
+    let chosen = summary.iter().find(|s| s.1 >= threshold).map_or(LR_CANDIDATES[0], |s| s.0);
+    let edge = if chosen == LR_CANDIDATES[LR_CANDIDATES.len() - 1] { " (NAM O MEP LUOI: nen thu lr lon hon)" } else { "" };
+    println!(
+        "[LR] BA moi tot nhat = {best_ba:.2} -> chon lr NHO NHAT co BA moi >= {threshold:.2}: lr = {chosen}{edge}"
+    );
+    chosen
 }
 
 /// Bảng chốt trên tập chọn cấu hình: mốc chỉ pretrain và 3 phương án với cấu hình đã khóa
