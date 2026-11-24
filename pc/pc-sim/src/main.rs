@@ -8,8 +8,8 @@
 //   - Đặc trưng chuẩn hóa và lớp cuối khởi đầu bằng kết quả pretrain (tinyml-core/src/pretrained.rs).
 // Mỗi lớp chỉ có một ổ nên BA theo lớp cũng là BA theo ổ.
 // Thí nghiệm: quét số ô K (tức dung lượng M), với mỗi K: r = 0%, 25%, 50% số ô K, đối chứng tắt học lại,
-// mốc "chỉ pretrain" (không cập nhật), và thí nghiệm phụ "reservoir" (R giữ mẫu ngẫu nhiên đều của cả lịch sử
-// thay cho vào trước ra trước, r = 0%); hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
+// mốc "chỉ pretrain" (không cập nhật), và thí nghiệm phụ "res" = reservoir (R giữ mẫu ngẫu nhiên đều của cả
+// lịch sử thay cho vào trước ra trước) với r = 0%, 25%, 50%; hai lịch trả nhãn (rải, theo đợt); hai lịch học (xen kẽ, ưu tiên Q);
 // 5 hạt giống ghép cặp.
 //   cargo run --release --bin pc-sim
 
@@ -302,7 +302,21 @@ fn sweep<const N: usize>(data: &Dataset) {
             learn: true,
             retention: Retention::Fifo,
         },
-        Variant { name: "reservoir", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Reservoir },
+        Variant { name: "res r = 0%", r_protected: 0, replay_enabled: true, learn: true, retention: Retention::Reservoir },
+        Variant {
+            name: "res r = 25%",
+            r_protected: (N * 25 / 100) as u32,
+            replay_enabled: true,
+            learn: true,
+            retention: Retention::Reservoir,
+        },
+        Variant {
+            name: "res r = 50%",
+            r_protected: (N * 50 / 100) as u32,
+            replay_enabled: true,
+            learn: true,
+            retention: Retention::Reservoir,
+        },
     ];
 
     for labels in [LabelSchedule::Spread, LabelSchedule::Burst] {

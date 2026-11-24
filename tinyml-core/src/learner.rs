@@ -22,7 +22,7 @@ pub struct Config {
     pub schedule: Schedule,   // Xen kẽ hoặc ưu tiên Q
     pub replay_enabled: bool, // false = đối chứng tắt học lại
     pub lr: f32,              // Tốc độ học
-    pub seed: u32,            // Hạt giống cho việc chọn mẫu học lại
+    pub seed: u32,            // Hạt giống cho việc chọn mẫu học lại và vé số reservoir
     pub retention: Retention, // Chọn mẫu R bị thu hồi (đề cương: Fifo)
 }
 
@@ -39,7 +39,12 @@ impl<const N: usize, const C: usize> Learner<N, C> {
         Self {
             pool: MemoryPool::new(),
             head: Head::zeros(),
-            policy: MemoryPolicy { r_protected: cfg.r_protected, q_max: cfg.q_max, retention: cfg.retention },
+            policy: MemoryPolicy {
+                r_protected: cfg.r_protected,
+                q_max: cfg.q_max,
+                retention: cfg.retention,
+                seed: cfg.seed,
+            },
             scheduler: Scheduler::new(cfg.schedule, cfg.replay_enabled, N as u32, cfg.seed),
             lr: cfg.lr,
         }

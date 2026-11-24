@@ -237,7 +237,7 @@ fn test_retention_fifo_vs_reservoir() {
     // Vào trước ra trước: R chỉ còn các mẫu mới nhất
     let fifo = r_ids_after_stream(Retention::Fifo);
     assert_eq!(fifo, (984..1000).collect::<Vec<u32>>(), "fifo: {fifo:?}");
-    // Reservoir: R rải khắp lịch sử (mô phỏng NumPy: 10/16 ID nhỏ hơn 500)
+    // Reservoir: R rải khắp lịch sử (mô phỏng Python với hạt giống 7: 7/16 ID nhỏ hơn 500)
     let reservoir = r_ids_after_stream(Retention::Reservoir);
     assert_eq!(reservoir.len(), 16);
     let old = reservoir.iter().filter(|&&id| id < 500).count();

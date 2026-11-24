@@ -15,16 +15,17 @@ pub enum Retention {
     /// Theo đề cương: thu hồi mẫu vào R sớm nhất (vào trước ra trước). R luôn chứa các mẫu mới nhất,
     /// nên sau khi đổi tốc độ một thời gian, R không còn mẫu tốc độ cũ.
     Fifo,
-    /// Thí nghiệm phụ: mỗi ID có một "vé số" cố định reservoir_key(ID); thu hồi mẫu R có vé nhỏ nhất.
+    /// Thí nghiệm phụ: mỗi ID có một "vé số" cố định reservoir_key(ID, hạt giống); thu hồi mẫu R có vé nhỏ nhất.
     /// R giữ các mẫu có vé lớn nhất trong mọi mẫu từng vào R, tức một mẫu ngẫu nhiên đều của toàn bộ
     /// lịch sử, nên vẫn còn mẫu tốc độ cũ sau khi đổi tốc độ.
     Reservoir,
 }
 
-/// Vé số của một ID: hàm trộn bit fmix32 của MurmurHash3. Là song ánh nên hai ID không bao giờ trùng vé.
+/// Vé số của một ID: hàm trộn bit fmix32 của MurmurHash3 trên ID trộn với hạt giống. Với một hạt giống,
+/// đây là song ánh theo ID nên hai ID không bao giờ trùng vé; hạt giống khác cho bộ vé khác.
 /// Chỉ dùng phép tính số nguyên nên PC và bo cho cùng kết quả.
-pub fn reservoir_key(id: u32) -> u32 {
-    let mut h = id;
+pub fn reservoir_key(id: u32, seed: u32) -> u32 {
+    let mut h = id ^ seed.wrapping_mul(0x9e37_79b9);
     h ^= h >> 16;
     h = h.wrapping_mul(0x85eb_ca6b);
     h ^= h >> 13;
@@ -38,6 +39,7 @@ pub struct MemoryPolicy {
     pub r_protected: u32,     // r: số mẫu R được bảo vệ khỏi thu hồi
     pub q_max: u32,           // Giới hạn số mẫu trong Q
     pub retention: Retention, // Chọn mẫu R bị thu hồi (đề cương: Fifo)
+    pub seed: u32,            // Hạt giống cho vé số của Retention::Reservoir
 }
 
 impl MemoryPolicy {
@@ -93,7 +95,7 @@ impl MemoryPolicy {
         if pool.count(SlotState::R) as u32 > self.r_protected {
             let victim = match self.retention {
                 Retention::Fifo => pool.oldest(SlotState::R),
-                Retention::Reservoir => pool.indices(SlotState::R).min_by_key(|&i| reservoir_key(pool.slot(i).id)),
+                Retention::Reservoir => pool.indices(SlotState::R).min_by_key(|&i| reservoir_key(pool.slot(i).id, self.seed)),
             };
             if let Some(idx) = victim {
                 log(Event { step: now, id: pool.slot(idx).id, kind: EventKind::EvictedR });
