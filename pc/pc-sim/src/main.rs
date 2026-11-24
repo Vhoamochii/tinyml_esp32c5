@@ -13,8 +13,12 @@
 //   chọn cấu hình với lr đã chọn; có độ lệch chuẩn giữa 5 hạt giống.
 // --sweep: thí nghiệm chọn cấu hình đầy đủ: quét K = 12, 15, 20, 25; r = 0%, 25%, 50% với cả hai luật R;
 //   hai lịch học (xen kẽ, ưu tiên Q). Cả hai chế độ đều chạy hai lịch trả nhãn (rải, theo đợt).
+// --test: GIAI ĐOẠN KIỂM THỬ trên 6 ổ kiểm thử, chỉ chạy sau khi đã khóa cấu hình (kể cả lr = LOCKED_LR),
+//   không chọn lại gì trên dữ liệu kiểm thử. Hai luồng A, B, mỗi luồng một ổ mỗi lớp; báo theo từng ổ,
+//   rồi tổng hợp 6 ổ kèm độ phân tán giữa các ổ.
 //   cargo run --release --bin pc-sim
 //   cargo run --release --bin pc-sim -- --sweep
+//   cargo run --release --bin pc-sim -- --test
 
 use std::collections::VecDeque;
 
@@ -44,6 +48,10 @@ const LOCKED_SCHEDULE: Schedule = Schedule::QPriority;
 const LR_CANDIDATES: [f32; 5] = [0.05, 0.1, 0.2, 0.3, 0.4];
 /// Ngưỡng chọn lr: cỡ độ lệch chuẩn lớn nhất của BA mới giữa các hạt giống (điểm %)
 const LR_BA_TOLERANCE: f32 = 0.5;
+/// lr đã khóa: kết quả của choose_learning_rate trên 3 ổ chọn cấu hình. Giai đoạn kiểm thử chỉ dùng giá trị này
+const LOCKED_LR: f32 = 0.2;
+/// Giai đoạn kiểm thử: hai luồng, mỗi luồng một ổ khỏe, một ổ vòng trong, một ổ vòng ngoài (đúng thứ tự lớp 0, 1, 2)
+const TEST_STREAMS: [(&str, [&str; NUM_CLASSES]); 2] = [("A", ["K005", "KI18", "KA22"]), ("B", ["K006", "KI21", "KA30"])];
 
 // Luồng Paderborn
 const OLD_STREAM_MEASUREMENTS: (u32, u32) = (1, 16); // Tốc độ cũ, vào luồng học
@@ -87,10 +95,10 @@ struct Dataset {
     heldout_old: Vec<(u8, Features)>,
 }
 
-fn load(condition: &str, range: (u32, u32)) -> Vec<Record> {
-    match paderborn::load_records(&paderborn::data_dir(), condition, &paderborn::CONFIG_BEARINGS, range.0..=range.1) {
+fn load(condition: &str, bearings: &[&'static str], range: (u32, u32)) -> Vec<Record> {
+    match paderborn::load_records(&paderborn::data_dir(), condition, bearings, range.0..=range.1) {
         Ok(mut records) => {
-            // load_records trả theo từng ổ; xếp lại theo lần đo (sắp xếp ổn định giữ thứ tự ổ K004, KI14, KA16)
+            // load_records trả theo từng ổ; xếp lại theo lần đo (sắp xếp ổn định giữ thứ tự ổ, ví dụ K004, KI14, KA16)
             // để luân phiên bản ghi giữa ba lớp
             records.sort_by_key(|r| r.measurement);
             records
@@ -113,10 +121,11 @@ fn normalized_windows(records: &[Record]) -> impl Iterator<Item = (u8, Features)
     })
 }
 
-fn load_dataset() -> Dataset {
-    let old = load(paderborn::OLD_SPEED, OLD_STREAM_MEASUREMENTS);
-    let heldout = load(paderborn::OLD_SPEED, OLD_HELDOUT_MEASUREMENTS);
-    let new = load(paderborn::NEW_SPEED, NEW_STREAM_MEASUREMENTS);
+/// Luồng của các ổ `bearings` (mỗi lớp một ổ): N15 lần đo 1-16, rồi N09 lần đo 1-20; N15 lần đo 17-20 để riêng
+fn load_dataset(bearings: &[&'static str]) -> Dataset {
+    let old = load(paderborn::OLD_SPEED, bearings, OLD_STREAM_MEASUREMENTS);
+    let heldout = load(paderborn::OLD_SPEED, bearings, OLD_HELDOUT_MEASUREMENTS);
+    let new = load(paderborn::NEW_SPEED, bearings, NEW_STREAM_MEASUREMENTS);
 
     // Tốc độ cũ trước, tốc độ mới sau
     let mut stream = Vec::new();
@@ -147,10 +156,20 @@ fn balanced_accuracy<'a>(results: impl Iterator<Item = &'a (u8, bool)>) -> f32 {
     }
 }
 
-/// BA (%) trên các bản ghi tốc độ cũ để riêng, với cập nhật đã tắt
-fn heldout_ba(head: &Head<NUM_CLASSES>, heldout: &[(u8, Features)]) -> f32 {
-    let results: Vec<(u8, bool)> = heldout.iter().map(|(c, z)| (*c, head.predict(z) == *c as usize)).collect();
-    balanced_accuracy(results.iter())
+/// Độ nhạy (%) của từng lớp; lớp không có cửa sổ nào cho 0
+fn class_recalls<'a>(results: impl Iterator<Item = &'a (u8, bool)>) -> [f32; NUM_CLASSES] {
+    let mut hit = [0u32; NUM_CLASSES];
+    let mut total = [0u32; NUM_CLASSES];
+    for &(class, ok) in results {
+        total[class as usize] += 1;
+        hit[class as usize] += ok as u32;
+    }
+    core::array::from_fn(|c| hit[c] as f32 / total[c].max(1) as f32 * 100.0)
+}
+
+/// Kết quả dự đoán trên các bản ghi tốc độ cũ để riêng, với cập nhật đã tắt
+fn heldout_results(head: &Head<NUM_CLASSES>, heldout: &[(u8, Features)]) -> Vec<(u8, bool)> {
+    heldout.iter().map(|(c, z)| (*c, head.predict(z) == *c as usize)).collect()
 }
 
 #[derive(Default, Clone, Copy)]
@@ -168,6 +187,8 @@ struct RunStats {
     replays: u32,
     wait_sum: u64, // Tổng số bước từ khi nhãn về đến lần học đầu
     left_in_q: u32,
+    recall_new: [f32; NUM_CLASSES],       // Độ nhạy từng lớp trên các cửa sổ N09 (mỗi lớp một ổ trong luồng)
+    forgetting_class: [f32; NUM_CLASSES], // Độ nhạy từng lớp trên N15 để riêng: trước khi đổi trừ sau thích nghi
 }
 
 fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> RunStats {
@@ -197,7 +218,8 @@ fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> Ru
     let mut labels_arrived = 0u32;
     let mut new_speed_results: Vec<(u8, bool)> = Vec::new();
     let mut recent: VecDeque<(u8, bool)> = VecDeque::with_capacity(SLIDING_WINDOWS + 1);
-    let mut before_switch: Option<(f32, f32)> = None; // (BA trượt, BA tốc độ cũ để riêng)
+    // (BA trượt, BA tốc độ cũ để riêng, độ nhạy từng lớp trên tốc độ cũ để riêng)
+    let mut before_switch: Option<(f32, f32, [f32; NUM_CLASSES])> = None;
     let mut recovery = None;
 
     let mut step = 0u32;
@@ -205,10 +227,8 @@ fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> Ru
         if step < n {
             let w = &data.stream[step as usize];
             if w.new_speed && before_switch.is_none() {
-                before_switch = Some((
-                    balanced_accuracy(recent.iter()),
-                    heldout_ba(&learner.head, &data.heldout_old),
-                ));
+                let old = heldout_results(&learner.head, &data.heldout_old);
+                before_switch = Some((balanced_accuracy(recent.iter()), balanced_accuracy(old.iter()), class_recalls(old.iter())));
             }
             // Dự đoán được chấm ngay, kể cả khi mẫu bị bỏ sau đó
             let pred = learner.on_window(step, step, w.features, &mut log);
@@ -220,7 +240,7 @@ fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> Ru
             if w.new_speed {
                 new_speed_results.push(result);
                 let seen = new_speed_results.len();
-                if let Some((target, _)) = before_switch {
+                if let Some((target, _, _)) = before_switch {
                     if recovery.is_none() && seen >= SLIDING_WINDOWS && balanced_accuracy(recent.iter()) >= target {
                         recovery = Some(seen as u32);
                     }
@@ -243,8 +263,14 @@ fn run<const N: usize>(data: &Dataset, labels: LabelSchedule, cfg: Config) -> Ru
     }
 
     st.ba_new = balanced_accuracy(new_speed_results.iter());
-    st.ba_old_before = before_switch.map_or(0.0, |(_, ba_old)| ba_old);
-    st.forgetting = before_switch.map_or(0.0, |(_, ba_old)| ba_old - heldout_ba(&learner.head, &data.heldout_old));
+    st.recall_new = class_recalls(new_speed_results.iter());
+    let old_after = heldout_results(&learner.head, &data.heldout_old);
+    let recalls_after = class_recalls(old_after.iter());
+    if let Some((_, ba_old, recalls_before)) = before_switch {
+        st.ba_old_before = ba_old;
+        st.forgetting = ba_old - balanced_accuracy(old_after.iter());
+        st.forgetting_class = core::array::from_fn(|c| recalls_before[c] - recalls_after[c]);
+    }
     st.recovery = recovery;
     st.labels_arrived = labels_arrived;
     st.left_in_q = learner.pool.count(SlotState::Q) as u32;
@@ -295,25 +321,20 @@ fn main() {
         eprintln!("[DEBUG][MAIN][ERROR] Chua co trong so pretrain: chay `cargo run --release --bin pretrain` truoc");
         std::process::exit(1);
     }
-    let data = load_dataset();
-    let n_old = data.stream.iter().filter(|w| !w.new_speed).count();
-    println!(
-        "[DEBUG][MAIN] PADERBORN, o cau hinh {:?} | luong: {} cua so N15 + {} cua so N09 | {} cua so N15 de rieng | {} hat giong ghep cap",
-        paderborn::CONFIG_BEARINGS,
-        n_old,
-        data.stream.len() - n_old,
-        data.heldout_old.len(),
-        SEEDS.len()
-    );
-
-    if std::env::args().any(|a| a == "--sweep") {
-        sweep::<12>(&data);
-        sweep::<15>(&data);
-        sweep::<20>(&data);
-        sweep::<25>(&data);
+    if std::env::args().any(|a| a == "--test") {
+        test_phase();
     } else {
-        let lr = choose_learning_rate(&data);
-        locked_table(&data, lr);
+        let data = load_dataset(&paderborn::CONFIG_BEARINGS);
+        print_data_header("o cau hinh", &paderborn::CONFIG_BEARINGS, &data);
+        if std::env::args().any(|a| a == "--sweep") {
+            sweep::<12>(&data);
+            sweep::<15>(&data);
+            sweep::<20>(&data);
+            sweep::<25>(&data);
+        } else {
+            let lr = choose_learning_rate(&data);
+            locked_table(&data, lr);
+        }
     }
 
     println!("\nC1 = hoc tren thiet bi, tat hoc lai | C2 = hoc lai, R vao truoc ra truoc (de cuong) | C3 = hoc lai, R reservoir");
@@ -322,6 +343,17 @@ fn main() {
     println!("BA cu = BA tren cac cua so N15 de rieng, ngay truoc khi doi toc do.");
     println!("Quen = BA cu - BA tren cung cac cua so do sau thich nghi (diem %).");
     println!("Phuc hoi = so cua so toc do moi de BA truot ({SLIDING_WINDOWS} cua so) tro ve muc truoc khi doi.");
+}
+
+fn print_data_header(name: &str, bearings: &[&str], data: &Dataset) {
+    let n_old = data.stream.iter().filter(|w| !w.new_speed).count();
+    println!(
+        "[DEBUG][MAIN] PADERBORN, {name} {bearings:?} | luong: {} cua so N15 + {} cua so N09 | {} cua so N15 de rieng | {} hat giong ghep cap",
+        n_old,
+        data.stream.len() - n_old,
+        data.heldout_old.len(),
+        SEEDS.len()
+    );
 }
 
 fn locked_banner(title: &str) {
@@ -382,6 +414,90 @@ fn locked_table(data: &Dataset, lr: f32) {
             print_row(labels.name(), v.name, &run_seeds::<LOCKED_K>(data, labels, LOCKED_SCHEDULE, v, lr));
         }
     }
+}
+
+/// Kết quả một ổ kiểm thử: (ổ, lớp, độ nhạy N09, quên), đã lấy trung bình theo hạt giống
+type BearingResult = (&'static str, u8, f32, f32);
+
+/// Giai đoạn kiểm thử (--test): 6 ổ kiểm thử, cấu hình đã khóa, lr = LOCKED_LR.
+/// Đề cương: báo kết quả từng ổ và độ phân tán giữa các ổ; tổng hợp các lần chạy (hạt giống) trên cùng ổ
+/// trước khi so độ phân tán giữa ổ. BA = trung bình các ổ trong từng lớp rồi trung bình đều ba lớp.
+fn test_phase() {
+    locked_banner(&format!("KIEM THU 6 O, lr = {LOCKED_LR}"));
+    let variants: Vec<&Variant> = std::iter::once(&PRETRAIN_ONLY).chain(CASES.iter()).collect();
+    let label_schedules = [LabelSchedule::Spread, LabelSchedule::Burst];
+    // per_bearing[lịch nhãn][phương án] = các (ổ, lớp, độ nhạy N09, quên), đã lấy trung bình theo hạt giống
+    let mut per_bearing: Vec<Vec<Vec<BearingResult>>> = vec![vec![Vec::new(); variants.len()]; label_schedules.len()];
+
+    for (stream_name, bearings) in &TEST_STREAMS {
+        for (c, b) in bearings.iter().enumerate() {
+            assert_eq!(paderborn::class_of(b), Some(c as u8), "luong {stream_name}: o {b} sai thu tu lop");
+        }
+        let data = load_dataset(bearings);
+        print_data_header(&format!("luong kiem thu {stream_name}"), bearings, &data);
+        for (li, labels) in label_schedules.iter().enumerate() {
+            println!("\n=== LUONG {stream_name} {bearings:?} | LICH TRA NHAN: {} ===", labels.name());
+            print_header("Lich nhan");
+            let mut details = Vec::new();
+            for (vi, v) in variants.iter().enumerate() {
+                let runs = run_seeds::<LOCKED_K>(&data, *labels, LOCKED_SCHEDULE, v, LOCKED_LR);
+                print_row(labels.name(), v.name, &runs);
+                let n = runs.len() as f32;
+                let mut cols = Vec::new();
+                for (c, bearing) in bearings.iter().enumerate() {
+                    let recall = runs.iter().map(|r| r.recall_new[c]).sum::<f32>() / n;
+                    let forgetting = runs.iter().map(|r| r.forgetting_class[c]).sum::<f32>() / n;
+                    per_bearing[li][vi].push((bearing, c as u8, recall, forgetting));
+                    cols.push(format!("{bearing}: N09 {recall:6.2}, quen {forgetting:6.2}"));
+                }
+                details.push(format!("[O] {:<14} | {}", v.name, cols.join(" | ")));
+            }
+            println!("[O] Theo tung o (trung binh {} hat giong):", SEEDS.len());
+            for line in details {
+                println!("{line}");
+            }
+        }
+    }
+
+    println!("\n################ TONG HOP 6 O KIEM THU | K = {LOCKED_K} o, r = 0%, {}, lr = {LOCKED_LR}", schedule_name(LOCKED_SCHEDULE));
+    for (li, labels) in label_schedules.iter().enumerate() {
+        println!("\n=== TONG HOP | LICH TRA NHAN: {} ===", labels.name());
+        println!(
+            "{:<14} | {:>10} | {:>12} | {:>10} | {:>12} | {:>24}",
+            "Phuong an", "BA moi", "SD giua o", "Quen", "SD giua o", "O thap nhat (N09)"
+        );
+        for (vi, v) in variants.iter().enumerate() {
+            let rows = &per_bearing[li][vi];
+            // Trung bình các ổ trong từng lớp, rồi trung bình đều ba lớp
+            let by_class = |f: &dyn Fn(&BearingResult) -> f32| {
+                (0..NUM_CLASSES as u8)
+                    .map(|c| {
+                        let vals: Vec<f32> = rows.iter().filter(|r| r.1 == c).map(f).collect();
+                        vals.iter().sum::<f32>() / vals.len().max(1) as f32
+                    })
+                    .sum::<f32>()
+                    / NUM_CLASSES as f32
+            };
+            let sd = |f: &dyn Fn(&BearingResult) -> f32| {
+                let n = rows.len() as f32;
+                let m = rows.iter().map(f).sum::<f32>() / n;
+                (rows.iter().map(|r| (f(r) - m).powi(2)).sum::<f32>() / (n - 1.0).max(1.0)).sqrt()
+            };
+            let worst = rows.iter().min_by(|a, b| a.2.total_cmp(&b.2)).map_or(String::new(), |r| format!("{} {:.2}", r.0, r.2));
+            println!(
+                "{:<14} | {:>10.2} | {:>12.2} | {:>10.2} | {:>12.2} | {:>24}",
+                v.name,
+                by_class(&|r| r.2),
+                sd(&|r| r.2),
+                by_class(&|r| r.3),
+                sd(&|r| r.3),
+                worst
+            );
+        }
+    }
+    println!("\nDo nhay theo o (N09) = % cua so N09 cua o do duoc doan dung ngay khi den.");
+    println!("Quen theo o = do nhay tren cac cua so N15 de rieng cua o do, truoc khi doi toc do tru sau thich nghi.");
+    println!("SD giua o = do lech chuan giua 6 o (moi o da lay trung binh {} hat giong).", SEEDS.len());
 }
 
 /// Thí nghiệm chọn cấu hình với K = N ô (--sweep)
