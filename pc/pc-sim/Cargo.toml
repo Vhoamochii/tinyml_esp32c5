@@ -2,6 +2,8 @@
 name = "pc-sim"
 version = "0.1.0"
 edition = "2021"
+# Hai chương trình: pc-sim (thí nghiệm, mặc định) và selftest (src/bin/selftest.rs)
+default-run = "pc-sim"
 
 [dependencies]
 tinyml-core = { path = "../../tinyml-core" }

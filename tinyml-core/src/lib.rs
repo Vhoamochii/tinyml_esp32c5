@@ -1,14 +1,19 @@
-// Lõi dùng chung cho bộ mô phỏng PC (pc/pc-sim) và firmware ESP32-C5 (embedded/firmware).
-// no_std, không dùng heap: mọi vùng nhớ có dung lượng cố định lúc biên dịch (YC2 trong báo cáo).
-// PC và bo chạy cùng một mã này nên cho cùng kết quả trên cùng luồng dữ liệu (YC6).
+// Lõi dùng chung cho bộ mô phỏng PC (pc/pc-sim) và firmware ESP32-C5 (embedded/firmware),
+// theo "Đề cương phương pháp nghiên cứu" (src/De_cuong_phuong_phap_Rust_ESP32-C5.docx).
+// no_std, không dùng heap: vùng nhớ có dung lượng cố định lúc biên dịch.
+// Ubuntu và bo chạy cùng một mã này nên phải cho cùng ID, nhãn và thứ tự học trên cùng luồng.
 #![no_std]
 
+pub mod event;
 pub mod head;
+pub mod learner;
 pub mod memsim;
 pub mod policy;
 pub mod rng;
+pub mod schedule;
+pub mod selftest;
 
-/// Số đặc trưng do bộ trích xuất INT8 tạo ra cho mỗi cửa sổ
+/// Số đặc trưng do bộ trích xuất INT8 tạo ra cho mỗi cửa sổ (vectơ z)
 pub const NUM_FEATURES: usize = 16;
-/// Ba lớp: ổ khỏe, lỗi vòng trong, lỗi vòng ngoài
+/// Ba lớp chẩn đoán: ổ khỏe, lỗi vòng trong, lỗi vòng ngoài
 pub const NUM_CLASSES: usize = 3;

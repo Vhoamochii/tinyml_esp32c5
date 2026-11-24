@@ -1,143 +1,233 @@
-// Kiểm thử độc lập cho tinyml-core: vùng nhớ P/Q/R, chính sách tạm thời, lớp cuối và bộ sinh ngẫu nhiên
-use tinyml_core::head::Head;
-use tinyml_core::memsim::{slots_for_budget, MemError, MemoryPool, SlotState, SLOT_SIZE_BYTES};
-use tinyml_core::policy::SimplePolicy;
+// Kiểm thử tinyml-core theo đề cương phương pháp (src/De_cuong_phuong_phap_Rust_ESP32-C5.docx)
+use tinyml_core::event::{Event, EventKind};
+use tinyml_core::learner::{Config, Learner, MANAGEMENT_BYTES};
+use tinyml_core::memsim::{slots_for_budget, SlotState, SLOT_SIZE_BYTES};
 use tinyml_core::rng::XorShift32;
-use tinyml_core::NUM_FEATURES;
+use tinyml_core::schedule::Schedule;
+use tinyml_core::{selftest, NUM_CLASSES, NUM_FEATURES};
+
+fn cfg(r_protected: u32, q_max: u32, schedule: Schedule, replay_enabled: bool) -> Config {
+    Config { r_protected, q_max, schedule, replay_enabled, lr: 0.1, seed: 7 }
+}
+
+fn z() -> [f32; NUM_FEATURES] {
+    [0.0; NUM_FEATURES]
+}
+
+/// Các sự kiện (bỏ PRED và ADMIT_P cho gọn) dưới dạng (id, loại)
+fn kinds(events: &[Event]) -> Vec<(u32, EventKind)> {
+    events
+        .iter()
+        .filter(|e| !matches!(e.kind, EventKind::Predicted(_) | EventKind::Admitted))
+        .map(|e| (e.id, e.kind))
+        .collect()
+}
 
 #[test]
-fn test_memsim_slot_size() {
+fn test_slot_size_and_budget() {
     println!("[TEST][MEMSIM][SlotSize] Bat dau...");
-    // 16 f32 (64) + id, t_request, t_state (12) + label, state (2) = 78 byte, căn chỉnh 4 -> 80
-    assert_eq!(SLOT_SIZE_BYTES, 80);
-    assert_eq!(slots_for_budget(2000), 25);
-    println!("[TEST][MEMSIM][SlotSize] PASS");
+    // 16 f32 (64) + id, order (8) + label, state (2) = 74 byte, căn chỉnh 4 -> 76
+    assert_eq!(SLOT_SIZE_BYTES, 76);
+    // K = floor((M - H) / s)
+    assert_eq!(slots_for_budget(2000, 0), 26);
+    assert_eq!(slots_for_budget(2000, MANAGEMENT_BYTES), (2000 - MANAGEMENT_BYTES) / 76);
+    assert_eq!(slots_for_budget(10, 100), 0);
+    println!("[TEST][MEMSIM][SlotSize] H = {} byte -> PASS", MANAGEMENT_BYTES);
 }
 
 #[test]
-fn test_memsim_happy_path() {
-    println!("[TEST][MEMSIM][HappyPath] Bat dau...");
-    let mut pool: MemoryPool<5> = MemoryPool::new();
-    let mut policy = SimplePolicy::new(2, 100, 1);
+fn test_reclaim_order_free_then_r_then_p() {
+    println!("[TEST][POLICY][ReclaimOrder] Bat dau...");
+    // 3 ô, r = 1
+    let mut l: Learner<3, NUM_CLASSES> = Learner::new(&cfg(1, 3, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
 
-    // Cấp 2 ô cho P
-    assert!(pool.alloc_p(1, [0.0; NUM_FEATURES], 10).is_ok());
-    assert!(pool.alloc_p(2, [0.0; NUM_FEATURES], 11).is_ok());
-    assert_eq!(pool.count(SlotState::P), 2);
-    assert_eq!(pool.usage_bytes(), 2 * SLOT_SIZE_BYTES);
-
-    // Nhãn của mẫu 1 đến -> P chuyển sang Q
-    let idx = pool.assign_label(1, 1, 12).unwrap();
-    assert_eq!(pool.count(SlotState::P), 1);
-    assert_eq!(pool.count(SlotState::Q), 1);
-    assert_eq!(pool.slot(idx).label, 1);
-
-    // Học lần đầu -> chính sách giữ vào R (R còn chỗ); số ô dùng không đổi
-    assert_eq!(pool.oldest_q(), Some(idx));
-    assert!(policy.after_first_training(&mut pool, idx, 13));
-    assert_eq!(pool.count(SlotState::Q), 0);
-    assert_eq!(pool.count(SlotState::R), 1);
-    assert_eq!(pool.usage_bytes(), 2 * SLOT_SIZE_BYTES);
-
-    println!("[TEST][MEMSIM][HappyPath] PASS");
-}
-
-#[test]
-fn test_memsim_edge_case_overflow() {
-    println!("[TEST][MEMSIM][Overflow] Bat dau...");
-    // Vùng nhớ chỉ có 1 ô
-    let mut pool: MemoryPool<1> = MemoryPool::new();
-    assert!(pool.alloc_p(1, [0.0; NUM_FEATURES], 0).is_ok());
-
-    let result = pool.alloc_p(2, [0.0; NUM_FEATURES], 0);
-    assert_eq!(result, Err(MemError::Full));
-    assert_eq!(MemError::Full.as_str(), "[MEMSIM][ERROR] Khong con o trong de cap cho P");
-
-    println!("[TEST][MEMSIM][Overflow] PASS");
-}
-
-#[test]
-fn test_memsim_error_invalid_id() {
-    println!("[TEST][MEMSIM][InvalidID] Bat dau...");
-    let mut pool: MemoryPool<4> = MemoryPool::new();
-
-    let result = pool.assign_label(99, 1, 0);
-    assert_eq!(result, Err(MemError::IdNotFound));
-    assert_eq!(MemError::IdNotFound.as_str(), "[MEMSIM][ERROR] Khong tim thay ID trong P");
-
-    println!("[TEST][MEMSIM][InvalidID] PASS");
-}
-
-#[test]
-fn test_policy_replay_capacity() {
-    println!("[TEST][POLICY][ReplayCapacity] Bat dau...");
-    // 5 ô, R giữ tối đa 2 ô
-    let mut pool: MemoryPool<5> = MemoryPool::new();
-    let mut policy = SimplePolicy::new(2, 100, 7);
-
-    // Học 20 mẫu: nếu R không bị giới hạn thì P sẽ hết ô từ mẫu thứ 6
-    for id in 1..=20 {
-        assert!(pool.alloc_p(id, [0.0; NUM_FEATURES], id).is_ok());
-        let idx = pool.assign_label(id, 0, id).unwrap();
-        policy.after_first_training(&mut pool, idx, id);
-    }
-
-    assert_eq!(pool.count(SlotState::R), 2);
-    assert_eq!(policy.r_seen, 20);
-    assert_eq!(pool.usage_bytes(), 2 * SLOT_SIZE_BYTES);
-    assert!(policy.pick_replay(&pool).is_some());
-
-    println!("[TEST][POLICY][ReplayCapacity] PASS");
-}
-
-#[test]
-fn test_policy_expire_pending() {
-    println!("[TEST][POLICY][ExpirePending] Bat dau...");
-    let mut pool: MemoryPool<10> = MemoryPool::new();
-    let policy = SimplePolicy::new(5, 2, 1);
-
-    // Mẫu ID n được tạo ở bước 1000 + n
+    // Ba ô trống được dùng trước
     for id in 1..=3 {
-        assert!(pool.alloc_p(id, [0.0; NUM_FEATURES], 1000 + id).is_ok());
+        l.on_window(id, id, z(), &mut log);
     }
+    // ID 1 và 2 được học -> R = {1, 2}, P = {3}
+    l.on_label(4, 1, 0, &mut log);
+    l.on_label(4, 2, 0, &mut log);
+    l.train(4, 10, &mut log);
+    // Mảng đầy, R có 2 > r = 1 -> thu hồi R vào sớm nhất (ID 1)
+    l.on_window(5, 4, z(), &mut log);
+    // R còn 1 = r -> R được bảo vệ, thu hồi P chờ lâu nhất (ID 3)
+    l.on_window(6, 5, z(), &mut log);
+    // Nhãn của ID 3 về sau khi ô đã bị thu hồi -> ghép trượt
+    l.on_label(7, 3, 0, &mut log);
 
-    // Tại bước 1005 với TTL = 2: chỉ giữ mẫu tạo từ bước 1003 trở đi
-    assert_eq!(policy.expire_pending(&mut pool, 1005), 2);
-    assert_eq!(pool.count(SlotState::P), 1);
-
-    // Nhãn đến muộn cho mẫu đã bị thu hồi -> ghép trượt
-    assert_eq!(pool.assign_label(1, 0, 1006), Err(MemError::IdNotFound));
-    assert!(pool.assign_label(3, 0, 1006).is_ok());
-
-    println!("[TEST][POLICY][ExpirePending] PASS");
+    let k = kinds(&ev);
+    assert_eq!(
+        k,
+        vec![
+            (1, EventKind::LabelMatched),
+            (2, EventKind::LabelMatched),
+            (1, EventKind::FirstLearn),
+            (2, EventKind::FirstLearn),
+            (1, EventKind::EvictedR),
+            (3, EventKind::EvictedP),
+            (3, EventKind::LabelMissed),
+        ]
+    );
+    println!("[TEST][POLICY][ReclaimOrder] PASS");
 }
 
 #[test]
-fn test_head_learns_separable_classes() {
-    println!("[TEST][HEAD][Separable] Bat dau...");
-    // Mỗi lớp c bật đặc trưng thứ c
-    let mut x = [[0.0f32; NUM_FEATURES]; 3];
-    for (c, xc) in x.iter_mut().enumerate() {
-        xc[c] = 1.0;
+fn test_q_protected_drop_no_slot() {
+    println!("[TEST][POLICY][QProtected] Bat dau...");
+    // 2 ô, r = 0; cả hai ô ở Q -> mẫu mới không có ô
+    let mut l: Learner<2, NUM_CLASSES> = Learner::new(&cfg(0, 2, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    l.on_window(0, 1, z(), &mut log);
+    l.on_window(0, 2, z(), &mut log);
+    l.on_label(1, 1, 0, &mut log);
+    l.on_label(1, 2, 0, &mut log);
+    l.on_window(2, 3, z(), &mut log);
+
+    assert_eq!(kinds(&ev).last(), Some(&(3, EventKind::DroppedNoSlot)));
+    assert_eq!(l.pool.count(SlotState::Q), 2);
+    println!("[TEST][POLICY][QProtected] PASS");
+}
+
+#[test]
+fn test_q_full_drops_sample() {
+    println!("[TEST][POLICY][QFull] Bat dau...");
+    // Q tối đa 1 mẫu
+    let mut l: Learner<4, NUM_CLASSES> = Learner::new(&cfg(0, 1, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    l.on_window(0, 1, z(), &mut log);
+    l.on_window(0, 2, z(), &mut log);
+    l.on_label(1, 1, 0, &mut log);
+    l.on_label(1, 2, 0, &mut log);
+
+    assert_eq!(
+        kinds(&ev),
+        vec![(1, EventKind::LabelMatched), (2, EventKind::LabelMatched), (2, EventKind::DroppedQFull)]
+    );
+    assert_eq!(l.pool.count(SlotState::Q), 1);
+    assert_eq!(l.pool.count(SlotState::Free), 3);
+    println!("[TEST][POLICY][QFull] PASS");
+}
+
+#[test]
+fn test_duplicate_label_no_second_first_learn() {
+    println!("[TEST][POLICY][DuplicateLabel] Bat dau...");
+    let mut l: Learner<4, NUM_CLASSES> = Learner::new(&cfg(4, 4, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    l.on_window(0, 1, z(), &mut log);
+    l.on_label(1, 1, 0, &mut log);
+    l.on_label(1, 1, 0, &mut log); // Trùng khi mẫu đang ở Q
+    l.train(1, 10, &mut log);
+    l.on_label(2, 1, 0, &mut log); // Trùng khi mẫu đã ở R
+    l.train(2, 10, &mut log);
+
+    let first_learns = ev.iter().filter(|e| e.kind == EventKind::FirstLearn).count();
+    let duplicates = ev.iter().filter(|e| e.kind == EventKind::LabelDuplicate).count();
+    assert_eq!(first_learns, 1);
+    assert_eq!(duplicates, 2);
+    println!("[TEST][POLICY][DuplicateLabel] PASS");
+}
+
+#[test]
+fn test_out_of_order_labels_learn_in_q_order() {
+    println!("[TEST][POLICY][OutOfOrder] Bat dau...");
+    let mut l: Learner<4, NUM_CLASSES> = Learner::new(&cfg(4, 4, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    for id in 1..=3 {
+        l.on_window(0, id, z(), &mut log);
     }
+    // Nhãn về khác thứ tự: 3, 1, 2 -> Q học đúng theo thứ tự vào hàng
+    l.on_label(1, 3, 0, &mut log);
+    l.on_label(2, 1, 0, &mut log);
+    l.on_label(3, 2, 0, &mut log);
+    l.train(3, 10, &mut log);
 
-    let mut head = Head::zeros();
-    let p0 = head.probs(&x[0]);
-    assert!((p0.iter().sum::<f32>() - 1.0).abs() < 1e-6);
+    let order: Vec<u32> = ev.iter().filter(|e| e.kind == EventKind::FirstLearn).map(|e| e.id).collect();
+    assert_eq!(order, vec![3, 1, 2]);
+    println!("[TEST][POLICY][OutOfOrder] PASS");
+}
 
-    let batch = [(&x[0], 0u8), (&x[1], 1u8), (&x[2], 2u8)];
-    let first_loss = head.sgd_step(&batch, 0.5);
-    let mut last_loss = first_loss;
-    for _ in 0..200 {
-        last_loss = head.sgd_step(&batch, 0.5);
+/// Loại lượt học (N = mới, R = học lại) của bước thứ hai trong kịch bản chung
+fn schedule_pattern(schedule: Schedule) -> Vec<char> {
+    let mut l: Learner<8, NUM_CLASSES> = Learner::new(&cfg(8, 8, schedule, true));
+    let mut ignore = |_: Event| {};
+    for id in 1..=4 {
+        l.on_window(0, id, z(), &mut ignore);
     }
+    // Bước 1: học ID 1 và 2 -> R = {1, 2}
+    l.on_label(1, 1, 0, &mut ignore);
+    l.on_label(1, 2, 0, &mut ignore);
+    l.train(1, 2, &mut ignore);
+    // Bước 2: nhãn của ID 3 và 4 về cùng lúc, đủ thời gian cho 4 lượt học
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    l.on_label(2, 3, 0, &mut log);
+    l.on_label(2, 4, 0, &mut log);
+    l.train(2, 4, &mut log);
+    ev.iter()
+        .filter_map(|e| match e.kind {
+            EventKind::FirstLearn => Some('N'),
+            EventKind::Replay => Some('R'),
+            _ => None,
+        })
+        .collect()
+}
 
-    assert!(last_loss < first_loss);
-    for (c, xc) in x.iter().enumerate() {
-        assert_eq!(head.predict(xc), c);
+#[test]
+fn test_schedule_interleaved_vs_q_priority() {
+    println!("[TEST][SCHEDULE][Patterns] Bat dau...");
+    // Xen kẽ: học lại một mẫu cũ sau mỗi lần học mẫu mới
+    assert_eq!(schedule_pattern(Schedule::Interleaved), vec!['R', 'N', 'R', 'N']);
+    // Ưu tiên Q: chỉ học lại khi Q rỗng
+    assert_eq!(schedule_pattern(Schedule::QPriority), vec!['N', 'N', 'R', 'R']);
+    println!("[TEST][SCHEDULE][Patterns] PASS");
+}
+
+#[test]
+fn test_replay_skips_last_learned_and_can_be_disabled() {
+    println!("[TEST][SCHEDULE][ReplayRules] Bat dau...");
+    // R chỉ có đúng mẫu vừa học -> không được học lại ngay
+    let mut l: Learner<4, NUM_CLASSES> = Learner::new(&cfg(4, 4, Schedule::QPriority, true));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    l.on_window(0, 1, z(), &mut log);
+    l.on_label(1, 1, 0, &mut log);
+    l.train(1, 5, &mut log);
+    assert_eq!(ev.iter().filter(|e| e.kind == EventKind::Replay).count(), 0);
+
+    // Đối chứng tắt học lại: không có lượt học lại nào
+    let mut l: Learner<8, NUM_CLASSES> = Learner::new(&cfg(8, 8, Schedule::QPriority, false));
+    let mut ev = Vec::new();
+    let mut log = |e: Event| ev.push(e);
+    for id in 1..=4 {
+        l.on_window(0, id, z(), &mut log);
+        l.on_label(0, id, 0, &mut log);
     }
+    l.train(0, 20, &mut log);
+    assert_eq!(ev.iter().filter(|e| e.kind == EventKind::Replay).count(), 0);
+    println!("[TEST][SCHEDULE][ReplayRules] PASS");
+}
 
-    println!("[TEST][HEAD][Separable] PASS");
+#[test]
+fn test_selftest_xor() {
+    println!("[TEST][SELFTEST][XOR] Bat dau...");
+    let mut out = |a: std::fmt::Arguments<'_>| println!("{a}");
+    assert!(selftest::run_xor(&mut out));
+    println!("[TEST][SELFTEST][XOR] PASS");
+}
+
+#[test]
+fn test_selftest_epoch_matching() {
+    println!("[TEST][SELFTEST][Epoch] Bat dau...");
+    let mut out = |a: std::fmt::Arguments<'_>| println!("{a}");
+    assert!(selftest::run_epoch_matching(&mut out));
+    println!("[TEST][SELFTEST][Epoch] PASS");
 }
 
 #[test]
@@ -150,8 +240,6 @@ fn test_rng_deterministic() {
         let v = a.range_f32(-1.0, 1.0);
         assert!((-1.0..1.0).contains(&v));
         b.range_f32(-1.0, 1.0);
-        assert!(a.below(12) < 12);
-        b.below(12);
     }
     println!("[TEST][RNG][Deterministic] PASS");
 }

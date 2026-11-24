@@ -1,70 +1,80 @@
-// Chính sách phân bổ TẠM THỜI, chưa phải đối chứng hay chính sách đề xuất trong báo cáo:
-// - P: thu hồi ô chờ nhãn quá `p_ttl` bước.
-// - R: giữ tối đa `r_max` ô; khi đầy thì thay thế theo reservoir sampling.
-// - Replay: chọn ngẫu nhiên đều trong R.
-// Đối chứng "chia tỷ lệ cố định, cho mượn ô" và chính sách "số ô P thích ứng (định luật Little)"
-// sẽ được viết thành các module cùng vai trò, dùng chung memsim.rs.
+// Chính sách bộ nhớ theo đề cương (mục "Giới hạn bộ nhớ" và Bảng 2):
+// Khi nhận mẫu mới, dùng ô trống trước. Nếu mảng đầy, thu hồi mẫu cũ nhất ở R khi R có hơn r mẫu,
+// sau đó mới xét mẫu chờ lâu nhất ở P. Q được bảo vệ. Khi hết ô hoặc Q đầy, ghi ID và lý do bỏ mẫu.
+// "Mẫu cũ nhất ở R" = mẫu VÀO R sớm nhất (nhóm chốt ngày 24/11/2026).
+// Các trường dùng u32 để kích thước H giống nhau trên PC (64 bit) và bo (32 bit).
 
+use crate::event::{Event, EventKind};
 use crate::memsim::{MemoryPool, SlotState};
-use crate::rng::XorShift32;
+use crate::NUM_FEATURES;
 
-pub struct SimplePolicy {
-    pub r_max: usize,
-    pub p_ttl: u32,
-    pub r_seen: u32, // Tổng số mẫu đã học lần đầu (dùng cho reservoir sampling)
-    rng: XorShift32,
+#[derive(Clone, Copy, Debug)]
+pub struct MemoryPolicy {
+    pub r_protected: u32, // r: số mẫu R được bảo vệ khỏi thu hồi
+    pub q_max: u32,       // Giới hạn số mẫu trong Q
 }
 
-impl SimplePolicy {
-    pub fn new(r_max: usize, p_ttl: u32, seed: u32) -> Self {
-        Self { r_max, p_ttl, r_seen: 0, rng: XorShift32::new(seed) }
-    }
-
-    /// Thu hồi các ô P đã chờ nhãn quá `p_ttl` bước. Trả về số ô bị thu hồi.
-    pub fn expire_pending<const N: usize>(&self, pool: &mut MemoryPool<N>, now: u32) -> usize {
-        let mut expired = 0;
-        for idx in 0..N {
-            let slot = pool.slot(idx);
-            if slot.state == SlotState::P && now.saturating_sub(slot.t_request) > self.p_ttl {
-                pool.free(idx);
-                expired += 1;
+impl MemoryPolicy {
+    /// Cấp ô P cho cửa sổ mới, thu hồi ô theo thứ tự của đề cương nếu cần
+    pub fn admit_window<const N: usize, L: FnMut(Event)>(
+        &self,
+        pool: &mut MemoryPool<N>,
+        now: u32,
+        id: u32,
+        features: [f32; NUM_FEATURES],
+        log: &mut L,
+    ) {
+        let slot = match pool.find_free() {
+            Some(idx) => Some(idx),
+            None => self.reclaim(pool, now, log),
+        };
+        match slot {
+            Some(idx) => {
+                pool.put_p(idx, id, features);
+                log(Event { step: now, id, kind: EventKind::Admitted });
             }
+            None => log(Event { step: now, id, kind: EventKind::DroppedNoSlot }),
         }
-        expired
     }
 
-    /// Gọi sau lần học đầu của ô `idx` (đang ở Q): giữ vào R hay trả ô.
-    /// Reservoir sampling (Algorithm R): mỗi mẫu đã học có cùng xác suất r_max / r_seen nằm trong R.
-    /// Trả về true nếu mẫu được giữ trong R.
-    pub fn after_first_training<const N: usize>(&mut self, pool: &mut MemoryPool<N>, idx: usize, now: u32) -> bool {
-        self.r_seen += 1;
-        if pool.count(SlotState::R) < self.r_max {
-            pool.move_to_r(idx, now);
-            return true;
-        }
-        if self.r_max > 0 {
-            let j = self.rng.below(self.r_seen) as usize;
-            if j < self.r_max {
-                // Thay thế ô R thứ j
-                let victim = pool.indices(SlotState::R).nth(j);
-                if let Some(victim) = victim {
-                    pool.free(victim);
+    /// Nhãn đến cho mẫu `id`
+    pub fn admit_label<const N: usize, L: FnMut(Event)>(
+        &self,
+        pool: &mut MemoryPool<N>,
+        now: u32,
+        id: u32,
+        label: u8,
+        log: &mut L,
+    ) {
+        match pool.find_id(id) {
+            Some(idx) if pool.slot(idx).state == SlotState::P => {
+                log(Event { step: now, id, kind: EventKind::LabelMatched });
+                if pool.count(SlotState::Q) as u32 >= self.q_max {
+                    pool.free(idx);
+                    log(Event { step: now, id, kind: EventKind::DroppedQFull });
+                } else {
+                    pool.to_q(idx, label);
                 }
-                pool.move_to_r(idx, now);
-                return true;
             }
+            Some(_) => log(Event { step: now, id, kind: EventKind::LabelDuplicate }),
+            None => log(Event { step: now, id, kind: EventKind::LabelMissed }),
         }
-        pool.free(idx);
-        false
     }
 
-    /// Chọn ngẫu nhiên một ô R để replay
-    pub fn pick_replay<const N: usize>(&mut self, pool: &MemoryPool<N>) -> Option<usize> {
-        let n = pool.count(SlotState::R);
-        if n == 0 {
-            return None;
+    /// Thu hồi một ô khi mảng đầy: R vào sớm nhất (nếu R > r), sau đó P chờ lâu nhất. Không đụng Q.
+    fn reclaim<const N: usize, L: FnMut(Event)>(&self, pool: &mut MemoryPool<N>, now: u32, log: &mut L) -> Option<usize> {
+        if pool.count(SlotState::R) as u32 > self.r_protected {
+            if let Some(idx) = pool.oldest(SlotState::R) {
+                log(Event { step: now, id: pool.slot(idx).id, kind: EventKind::EvictedR });
+                pool.free(idx);
+                return Some(idx);
+            }
         }
-        let j = self.rng.below(n as u32) as usize;
-        pool.indices(SlotState::R).nth(j)
+        if let Some(idx) = pool.oldest(SlotState::P) {
+            log(Event { step: now, id: pool.slot(idx).id, kind: EventKind::EvictedP });
+            pool.free(idx);
+            return Some(idx);
+        }
+        None
     }
 }
