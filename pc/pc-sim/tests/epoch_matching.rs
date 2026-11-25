@@ -1,11 +1,11 @@
-use pc_sim::sample_queue::{SampleManager, PushError, ResolveError};
+use tinyol_core::sample_queue::{SampleManager, ResolveError};
 
 #[test]
 fn test_p_full_drops_and_records() {
     let mut mgr: SampleManager<2, 8, 8> = SampleManager::new(0);
     assert_eq!(mgr.push_sample([0; 16]), Ok(0));
     assert_eq!(mgr.push_sample([0; 16]), Ok(1));
-    assert_eq!(mgr.push_sample([0; 16]), Ok(2)); // ID 0 bi day ra
+    assert_eq!(mgr.push_sample([0; 16]), Ok(2)); 
     
     assert_eq!(mgr.dropped_p_full, 1);
     assert_eq!(mgr.pushed, 3);
@@ -80,26 +80,24 @@ fn test_replay_moves_to_r() {
 
 #[test]
 fn test_eviction_policy_t6() {
-    // 1. Kiem tra eviction o P khi P day (P=2)
     let mut mgr: SampleManager<2, 8, 8> = SampleManager::new(0);
-    mgr.push_sample([0; 16]).unwrap(); // ID 0
-    mgr.push_sample([0; 16]).unwrap(); // ID 1
-    mgr.push_sample([0; 16]).unwrap(); // ID 2 -> P day, pop ID 0
+    mgr.push_sample([0; 16]).unwrap();
+    mgr.push_sample([0; 16]).unwrap();
+    mgr.push_sample([0; 16]).unwrap(); 
     
     assert_eq!(mgr.dropped_p_full, 1);
     let p1 = mgr.pending.pop().unwrap();
     let p2 = mgr.pending.pop().unwrap();
     assert_eq!([p1.id, p2.id], [1, 2]);
 
-    // 2. Kiem tra eviction o R khi R day (R=2)
     let mut mgr2: SampleManager<8, 8, 2> = SampleManager::new(0);
     for i in 0..4 {
         mgr2.push_sample([0; 16]).unwrap();
         mgr2.resolve_label(i, 1).unwrap();
     }
-    mgr2.pop_for_learning(); // R len 1 (ID 0)
-    mgr2.pop_for_learning(); // R len 2 (ID 0, 1)
-    mgr2.pop_for_learning(); // R day, pop ID 0, push ID 2
+    mgr2.pop_for_learning();
+    mgr2.pop_for_learning();
+    mgr2.pop_for_learning();
     assert_eq!(mgr2.dropped_r_full, 1);
 
     println!("[TEST][EPOCH_MATCHING][EVICTION_POLICY] expected_dropsP=1 dropsR=1 actual_dropsP={} dropsR={} PASS", mgr.dropped_p_full, mgr2.dropped_r_full);

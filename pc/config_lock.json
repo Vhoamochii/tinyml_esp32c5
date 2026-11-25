@@ -1,0 +1,35 @@
+{
+    "version": "v1.0.0",
+    "dataset": "Paderborn",
+    "operating_conditions": [
+        "N15_M07_F10",
+        "N09_M07_F10"
+    ],
+    "features": 16,
+    "classes": 3,
+    "architecture": "LastLayer_Softmax",
+    "learning_rate": 0.05,
+    "K_capacity": 100,
+    "Q_capacity": 20,
+    "r_selected_pct": 25,
+    "strategy": "interleaved",
+    "store_type": "INT8",
+    "stride": 1024,
+    "window_size": 1024,
+    "deadline_T_ms": 16,
+    "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+    ],
+    "test_bearings": [
+        "K005",
+        "K006",
+        "KI18",
+        "KI21",
+        "KA22",
+        "KA30"
+    ]
+}

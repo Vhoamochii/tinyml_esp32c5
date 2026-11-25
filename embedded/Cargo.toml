@@ -4,12 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-libm = "0.2"
-esp-hal = { version = "1.1.1", features = ["esp32c5"] }
+tinyol-core = { path = "../shared/tinyol-core" }
+esp-hal = { version = "1.2.2", features = ["esp32c5"] }
 esp-println = { version = "0.17.0", features = ["esp32c5"] }
 esp-backtrace = { version = "0.19.0", features = ["esp32c5", "panic-handler", "println"] }
 esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32c5"] }
-
-[[bin]]
-name = "embedded"
-path = "src/main.rs"

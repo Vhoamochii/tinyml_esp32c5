@@ -1,0 +1,16 @@
+
+running 2 tests
+[TEST][SCHEDULE][Spread] expected=4.00 actual=4.00 PASS
+[TEST][SCHEDULE][Burst]   expected=4.00 actual=4.00 PASS
+test schedule_math ... ok
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python][RECALL_BEFORE] c0=100.0 c1=99.8 c2=99.6 ba=99.80 w_norm=1.779e1 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python][RECALL_AFTER] c0=27.2 c1=89.8 c2=56.6 ba=57.96 w_norm=3.763e1 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python] ba_new=95.41 ba_truoc=99.80 ba_sau=57.96 forget=41.84 match=100.00 ram=8192 p95=5us over=0.00 learned=54089 replay=53889 miss=0 stream=54089 reserve=6022
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python][RECALL_BEFORE] c0=100.0 c1=99.8 c2=99.6 ba=99.77 w_norm=1.777e1 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python][RECALL_AFTER] c0=27.2 c1=90.2 c2=58.2 ba=58.62 w_norm=3.797e1 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python] ba_new=95.75 ba_truoc=99.77 ba_sau=58.62 forget=41.15 match=100.00 ram=8192 p95=26us over=0.00 learned=54089 replay=53854 miss=0 stream=54089 reserve=6022
+[TABLE][DONE] da ghi results/case1.csv
+test table_case1 ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.70s
+

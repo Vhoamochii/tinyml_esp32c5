@@ -1,0 +1,10 @@
+
+running 1 test
+[TEST][TABLE][roi r=64 K=256 Case1][RECALL_BEFORE] c0=100.0 c1=99.8 c2=99.6 ba=99.80 w_norm=1.779e1 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 Case1][RECALL_AFTER] c0=27.2 c1=89.8 c2=56.6 ba=57.96 w_norm=3.763e1 max_abs_z=4.000e0
+[TEST][PARITY][CASE2] expected_preds=30069 actual_preds=30069 so_lech=0
+[TEST][PARITY][CASE2] expected=khop_tuyet_doi actual=khop PASS
+test parity_case1_case2 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+

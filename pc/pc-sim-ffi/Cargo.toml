@@ -1,0 +1,13 @@
+[package]
+name = "pc-sim-ffi"
+version = "0.1.0"
+edition = "2021"
+
+# Workspace rieng, khong phu thuoc workspace cha
+[workspace]
+
+[dependencies]
+pc-sim = { path = "../pc-sim" }
+
+[build-dependencies]
+cc = "1.0"

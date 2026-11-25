@@ -1,0 +1,9 @@
+[package]
+name = "pc-sim-pure"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+pc-sim = { path = "../pc-sim" }

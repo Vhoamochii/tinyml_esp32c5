@@ -1,10 +1,6 @@
-use pc_sim::xor_tanh::run_xor_tanh_test_silent;
-
+//! Smoke check nhanh: gia tri vang XOR muc 4. Bang do that nam o tests.
 fn main() {
-    println!("[PC_SIM][START] Chay thu nghiem XOR tren PC");
-    let r = run_xor_tanh_test_silent();
-    println!(
-        "[PC_SIM][END] correct={}/{} final_loss={:.6} passed={}",
-        r.correct, r.total, r.final_loss, r.passed()
-    );
+    let (ok, err) = pc_sim::head_linear::run_head_golden();
+    println!("[MAIN][HEAD_GOLDEN] ok={ok} max_err={err:.3e}");
+    if !ok { std::process::exit(1); }
 }

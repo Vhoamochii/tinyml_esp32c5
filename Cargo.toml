@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "shared/tinyol-core",
+    "pc/pc-sim",
+    "embedded"
+]
+resolver = "2"

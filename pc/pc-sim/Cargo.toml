@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tinyol-core = { path = "../../shared/tinyol-core" }
 libm = "0.2"
