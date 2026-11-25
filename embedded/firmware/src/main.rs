@@ -197,11 +197,14 @@ fn busy_wait_us(us: u64) {
     while t0.elapsed().as_micros() < us {}
 }
 
-/// Số byte tối đa đưa vào FIFO phát (128 byte) trước khi chờ phát xong
-const TX_CHUNK: usize = 64;
+/// Số byte mỗi đợt phát, và khoảng nghỉ sau mỗi đợt
+const TX_CHUNK: usize = 16;
+const TX_GAP_US: u64 = 2_000;
 
-/// Ghi hết dữ liệu ra UART, mỗi lần tối đa TX_CHUNK byte rồi chờ phát xong, để FIFO phát không bao giờ đầy.
-/// Lý do: ghi dồn phản hồi dài hơn 128 byte ở 921600 baud từng làm mất đuôi dòng [STEP] (bước 2, 5e)
+/// Ghi hết dữ liệu ra UART theo đợt TX_CHUNK byte, chờ phát xong rồi nghỉ TX_GAP_US (~8 KB/s, dưới mức
+/// log 115200 baud luôn đến nguyên vẹn). Lý do: ở 921600 baud, chiều bo -> PC (qua cầu USB-UART và máy ảo)
+/// mất từng đoạn byte khi phát liền; chiều PC -> bo thì không. Chỉ áp dụng cho chữ bo gửi lên (vài trăm
+/// byte mỗi bước) và nằm ngoài khoảng đo thời gian
 fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
     for chunk in data.chunks(TX_CHUNK) {
         let mut sent = 0;
@@ -212,6 +215,7 @@ fn uart_write_all(uart: &mut Uart<'_, Blocking>, data: &[u8]) {
             }
         }
         let _ = uart.flush();
+        busy_wait_us(TX_GAP_US);
     }
 }
 
