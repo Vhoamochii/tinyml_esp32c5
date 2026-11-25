@@ -1,0 +1,171 @@
+   Compiling tinyml-core v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/tinyml-core)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `release` profile [optimized] target(s) in 2.18s
+     Running `target/release/stream`
+[STREAM] 300 buoc | C2 | lich nhan rai | hat giong 11 | lr = 0.1 | luong cauhinh ["K004", "KI14", "KA16"] | cong /dev/ttyUSB0
+[LOAD] N15_M07_F10 K004: tin hieu tho
+[LOAD] N15_M07_F10 KI14: tin hieu tho
+[LOAD] N15_M07_F10 KA16: tin hieu tho
+[STREAM] Da reset bo; bat tay o 115200 baud, cho bo chay xong selftest + bench (toi da 30 s)...
+[BO] ESP-ROM:esp32c5-eco2-20250121
+[BO] Build:Jan 21 2025
+[BO] rst:0x1 (POWERON),boot:0x50 (SPI_FAST_FLASH_BOOT)
+[BO] SPI mode:DIO, clock div:2
+[BO] load:0x408556c0,len:0x1468
+[BO] load:0x4084bba0,len:0xd6c
+[BO] load:0x4084e5a0,len:0x30a8
+[BO] entry 0x4084bbaa
+[BO] I (23) boot: ESP-IDF v6.1-829-g9a97f6c54ec 2nd stage bootloader
+[BO] I (24) boot: chip revision: v1.0
+[BO] I (24) boot.esp32c5: SPI Speed      : 40MHz
+[BO] I (25) boot.esp32c5: SPI Mode       : DIO
+[BO] I (28) boot.esp32c5: SPI Flash Size : 4MB
+[BO] I (32) boot: Partition Table:
+[BO] I (35) boot: ## Label            Usage          Type ST Offset   Length
+[BO] I (41) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+[BO] I (47) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+[BO] I (54) boot:  2 factory          factory app      00 00 00010000 003f0000
+[BO] I (61) esp_image: segment 0: paddr=00010020 vaddr=42000020 size=04350h ( 17232) map
+[BO] I (72) esp_image: segment 1: paddr=00014378 vaddr=40800000 size=00014h (    20) load
+[BO] I (76) esp_image: segment 2: paddr=00014394 vaddr=42004394 size=1b550h (111952) map
+[BO] I (106) esp_image: segment 3: paddr=0002f8ec vaddr=40800014 size=01444h (  5188) load
+[BO] I (109) boot: Loaded app from partition at offset 0x10000
+[BO] [FW][BOOT] s = 76 byte/o, M = 2000 byte, H = 44 byte -> K = 25 o | CPU = CpuClock::max()
+[BO] [XOR][FIXED] du doan=0 1 1 0 (mong doi 0 1 1 0) -> PASS
+[BO] [XOR][STEP] w1[0]=0.050000001 b1=0.050000001 w0[0]=-0.050000001 b0=-0.050000001 con_lai_bang_0=true -> PASS
+[BO] [XOR][TRAIN] 200 luot: du doan=0 1 1 0 -> PASS
+[BO] [EPOCH] 10 cua so, epoch = 5 cua so, nhan tre 2 buoc
+[BO] [EVT] step=0 id=0 PRED 0
+[BO] [EVT] step=0 id=0 ADMIT_P
+[BO] [EVT] step=1 id=1 PRED 0
+[BO] [EVT] step=1 id=1 ADMIT_P
+[BO] [EVT] step=2 id=2 PRED 0
+[BO] [EVT] step=2 id=2 ADMIT_P
+[BO] [EVT] step=2 id=0 LABEL_MATCH
+[BO] [EVT] step=2 id=0 LEARN_FIRST
+[BO] [EVT] step=3 id=3 PRED 0
+[BO] [EVT] step=3 id=3 ADMIT_P
+[BO] [EVT] step=3 id=1 LABEL_MATCH
+[BO] [EVT] step=3 id=1 LEARN_FIRST
+[BO] [EVT] step=4 id=4 PRED 1
+[BO] [EVT] step=4 id=4 ADMIT_P
+[BO] [EVT] step=4 id=2 LABEL_MATCH
+[BO] [EVT] step=4 id=2 LEARN_FIRST
+[BO] [EVT] step=5 id=5 PRED 2
+[BO] [EVT] step=5 id=5 ADMIT_P
+[BO] [EVT] step=5 id=3 LABEL_MATCH
+[BO] [EVT] step=5 id=3 LEARN_FIRST
+[BO] [EVT] step=6 id=6 PRED 0
+[BO] [EVT] step=6 id=6 ADMIT_P
+[BO] [EVT] step=6 id=4 LABEL_MATCH
+[BO] [EVT] step=6 id=4 LEARN_FIRST
+[BO] [EVT] step=7 id=7 PRED 1
+[BO] [EVT] step=7 id=7 ADMIT_P
+[BO] [EVT] step=7 id=5 LABEL_MATCH
+[BO] [EVT] step=7 id=5 LEARN_FIRST
+[BO] [EVT] step=8 id=8 PRED 2
+[BO] [EVT] step=8 id=8 ADMIT_P
+[BO] [EVT] step=8 id=6 LABEL_MATCH
+[BO] [EVT] step=8 id=6 LEARN_FIRST
+[BO] [EVT] step=9 id=9 PRED 0
+[BO] [EVT] step=9 id=9 ADMIT_P
+[BO] [EVT] step=9 id=7 LABEL_MATCH
+[BO] [EVT] step=9 id=7 LEARN_FIRST
+[BO] [EVT] step=10 id=8 LABEL_MATCH
+[BO] [EVT] step=10 id=8 LEARN_FIRST
+[BO] [EVT] step=11 id=9 LABEL_MATCH
+[BO] [EVT] step=11 id=9 LEARN_FIRST
+[BO] [EPOCH][P_SAU_BUOC_4] 2 -> PASS
+[BO] [EPOCH][GHEP_NHAN] -> PASS
+[BO] [EPOCH][HOC_LAN_DAU] moi ID dung 1 lan: true | P,Q rong cuoi luong: true -> PASS
+[BO] [SELFTEST] XOR=PASS EPOCH=PASS
+[BO] [BENCH][RAM] WindowExtractor = 8304 byte | Learner<25, 3> = 2152 byte | pretrain co san = true
+[BO] [BENCH][EXTRACT] khoi thuong (60 khoi): trung vi 6331 us | P95 21034 us | max 21673 us | han moi khoi 16000 us
+[BO] [BENCH][EXTRACT] khoi cuoi (them FFT pho bao): trung vi 21857 us | max 22234 us
+[BO] [BENCH][EXTRACT] ca cua so (16 khoi): trung vi 175522 us | max 176588 us | han 256000 us -> KIP
+[BO] [BENCH][EXTRACT] z = [7.107674, 23.039549, 0.20177706, 16.849392, 2.3705916, 26.881506, -2.3830607, -1.9202913, -1.7459561, -0.015069253, -3.4867778, -3.3377752, -4.237942, 0.51522887, -0.3447874, -0.06001588]
+[BO] [BENCH][LEARN] 1 buoc (chuan hoa + du doan + cap o + nhan + 2 luot hoc), 200 buoc: trung vi 175 us | P95 190 us | max 552 us
+[BO] [BENCH] XONG
+[BO] [STREAM] Cho PC: thoat espflash monitor roi chay `cargo run --release --bin stream` trong pc/pc-sim
+[BO] [STREAM] UART0 san sang o 115200 baud, cho lenh G tu PC
+[STREAM] Da lien lac o 921600 baud
+[STREAM] CONFIG OK K=25 H=44 W=0x68f4e376 pretrain=true
+[STREAM] gui lai buoc 2 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 3 (lan 1): phan hoi hong (3 dong EVT, '[STEP] step=3 pred=1 ext_us=174243 learn_us=295 sum=')
+[STREAM] gui lai buoc 4 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 6 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 6 (lan 2): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 6 (lan 3): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 6 (lan 4): phan hoi hong (5 dong EVT, '[STEP] step=6 pred=2 ext_us=174109 learn_us=338 sum=2611')
+[STREAM] gui lai buoc 8 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 8 (lan 2): phan hoi hong (5 dong EVT, '[STEP] step=8 pred=2 ext_us=174176 learn_us=350 sum=2077')
+[STREAM] gui lai buoc 9 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=9 pred=2 ext_us=174335 learn_us=387 sum=2325')
+[STREAM] gui lai buoc 10 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 11 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=11 pred=0 ext_us=174192 learn_us=379 sum=25hk=52406095')
+[STREAM] gui lai buoc 11 (lan 2): phan hoi hong (5 dong EVT, '[STEP] step=11 earn_us=379 sum=2523474403 chk=52406095')
+[STREAM] gui lai buoc 12 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 12 (lan 2): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 13 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 14 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 15 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 16 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 17 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 18 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 18 (lan 2): phan hoi hong (5 dong EVT, '[STEP] step=18 1475 chk=477340535')
+[STREAM] gui lai buoc 18 (lan 3): phan hoi hong (5 dong EVT, '[STEP] step=18 1 sum=28701475 chk=477340535')
+[STREAM] gui lai buoc 19 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 20 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 21 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 21 (lan 2): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 21 (lan 3): phan hoi hong (5 dong EVT, '[STEP] step=21 pred=0 ext_us=174175 learn_us=3k=3143471373')
+[STREAM] gui lai buoc 21 (lan 4): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 22 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 23 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 24 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 25 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 26 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 26 (lan 2): phan hoi hong (5 dong EVT, '[STEP] step=26 pred=0 ext_us=174188 learn_us=470 sum=')
+[STREAM] gui lai buoc 27 (lan 1): khong co dong [STEP] (6 dong EVT)
+[STREAM] gui lai buoc 27 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=27 pred=0 ext_us=174251 learn_us=435 sum==1771436269')
+[STREAM] gui lai buoc 28 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=28 pred=0 ext_us=174398 learn_us=483 sum=')
+[STREAM] gui lai buoc 29 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=29 pred=1 ext_us=174266 learn_')
+[STREAM] gui lai buoc 29 (lan 2): phan hoi hong (5 dong EVT, '[STEP] step=29 pred=1 ext_us=174266 learn_us=434 sum=3120603514 chk=25951945')
+[STREAM] gui lai buoc 30 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 31 (lan 1): phan hoi hong (6 dong EVT, '[STEP] step=31 pred=2 ext_us=17433hk=615745444')
+[STREAM] gui lai buoc 31 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=31 pred=15745444')
+[STREAM] gui lai buoc 31 (lan 3): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 32 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=32 pred=2 ext_us=174425 learn_us=462 sum=170633143')
+[STREAM] gui lai buoc 33 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 33 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=33 pred=2 ext_us=174396 learn_us=421 su')
+[STREAM] gui lai buoc 33 (lan 3): phan hoi hong (6 dong EVT, '[STEP] step=33 preds=421 sum=2827924461 chk=4057318622')
+[STREAM] gui lai buoc 34 (lan 1): phan hoi hong (6 dong EVT, '[STEP] step=34 pre9289242')
+[STREAM] gui lai buoc 35 (lan 1): phan hoi hong (6 dong EVT, '[STEP] step=35 pred=2 ext_us=174406 learn_us=421 sum=3735998884')
+[STREAM] gui lai buoc 36 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 38 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=38 pred=2 ext_us=174439 learn_us=407 sum=502')
+[STREAM] gui lai buoc 38 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=38 pred=2 ext_us=174439 learn_us=407 s')
+[STREAM] gui lai buoc 39 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 40 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=40 pred=2 ext_us=174416 learn_us=455')
+[STREAM] gui lai buoc 41 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 42 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 42 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=42 prearn_us=455 sum=2728110783 chk=3771148275')
+[STREAM] gui lai buoc 43 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 44 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 44 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=44 pred=2 ext_us=174361 learn_us=459 s')
+[STREAM] gui lai buoc 45 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 46 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 47 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=47 pred=0 ext_us=174310 learn_us=435')
+[STREAM] gui lai buoc 48 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 49 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=49 pred=0 ext_us=174470 learn_us=446 sum=1937233539 chk=3502036970')
+[STREAM] buoc 50/300 | khop 50/50
+[STREAM] gui lai buoc 51 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 51 (lan 2): phan hoi hong (6 dong EVT, '[STEP] step=51 pred=0 ext_us=174215 learn_us=376 s58')
+[STREAM] gui lai buoc 51 (lan 3): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 51 (lan 4): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 51 (lan 5): khong co dong [STEP] (6 dong EVT)
+[STREAM] gui lai buoc 52 (lan 1): phan hoi hong (5 dong EVT, '[STEP] step=52 pred=1 ext_us=174291 learn_us=463 sum=425784131')
+[STREAM] gui lai buoc 53 (lan 1): khong co dong [STEP] (5 dong EVT)
+[STREAM] gui lai buoc 53 (lan 2): khong co dong [STEP] (6 dong EVT)
+[STREAM] gui lai buoc 53 (lan 3): phan hoi hong (6 dong EVT, '[STEP] step=53 pre sum=3113662734 chk=3143460372')
+[STREAM] gui lai buoc 53 (lan 4): phan hoi hong (5 dong EVT, '[STEP] step=53 pred=0 ext_us=174433 learn_us=432 sum=3113662734 chk=3143460372')
+[STREAM] gui lai buoc 53 (lan 5): khong co dong [STEP] (6 dong EVT)
+[STREAM][ERROR] buoc 53: gui lai 5 lan van loi (phan hoi hong (6 dong EVT, '[STEP] step=53 pred=0 ext_us=174433 learn_us=432 s3143460372'))

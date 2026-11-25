@@ -1,15 +1,15 @@
 // FILE SINH TỰ ĐỘNG bởi `cargo run --release --bin pretrain` trong pc/pc-sim. Không sửa tay.
-// Hệ số chuẩn hóa 16 đặc trưng và trọng số lớp cuối huấn luyện sẵn trên 8 ổ huấn luyện ở N15_M07_F10.
-// Bản này là chỗ giữ chỗ: chưa chạy pretrain nên AVAILABLE = false.
+// Hệ số chuẩn hóa 16 đặc trưng và trọng số lớp cuối huấn luyện sẵn trên K001, K002, K003, KI04, KI16, KI17, KA04, KA15 ở N15_M07_F10.
+// Lần đo 1-16, 15 cửa sổ mỗi bản ghi, 50 lượt, lr = 0.05, hạt giống 2026.
 
 use crate::head::Head;
 use crate::{NUM_CLASSES, NUM_FEATURES};
 
-pub const AVAILABLE: bool = false;
-pub const FEATURE_MEAN: [f32; NUM_FEATURES] = [0.0; NUM_FEATURES];
-pub const FEATURE_STD: [f32; NUM_FEATURES] = [1.0; NUM_FEATURES];
-pub const WEIGHTS: [[f32; NUM_FEATURES]; NUM_CLASSES] = [[0.0; NUM_FEATURES]; NUM_CLASSES];
-pub const BIAS: [f32; NUM_CLASSES] = [0.0; NUM_CLASSES];
+pub const AVAILABLE: bool = true;
+pub const FEATURE_MEAN: [f32; NUM_FEATURES] = [7.9291725, 8.562183, -0.080036424, 11.57121, 1.4255373, 14.655002, -0.8763428, -0.32725343, -0.8034053, -1.0393634, -0.2917934, -0.090346195, -0.1941698, -0.14861347, 0.05759207, -0.11288322];
+pub const FEATURE_STD: [f32; NUM_FEATURES] = [2.291771, 4.9968824, 0.20935656, 4.4304686, 0.16323909, 6.305443, 0.26592776, 0.16191038, 0.1371837, 0.5678086, 0.40024167, 0.5596561, 0.27285156, 0.38821107, 0.23225799, 0.14160709];
+pub const WEIGHTS: [[f32; NUM_FEATURES]; NUM_CLASSES] = [[0.95711607, 1.77661, 0.56336194, 1.1464283, 1.5895227, 1.1611747, -0.0820422, -2.118688, 1.0483415, 1.6286722, -0.7043345, -1.2016225, 0.056718215, -0.8795532, 0.96872556, 0.63057166], [0.19199662, 0.91028315, 0.44101495, 0.1601548, -1.6155682, 0.09974139, 3.678427, 5.91723, -1.4038254, -0.17136978, 0.76796645, 3.0727282, 0.16786785, 0.4973806, -0.3779273, 0.31094328], [-1.1491216, -2.6870267, -1.0043792, -1.3066982, 0.02582671, -1.2610413, -3.596354, -3.7985492, 0.35546437, -1.4573674, -0.06360211, -1.8711603, -0.22458299, 0.3822619, -0.59085786, -0.94150805]];
+pub const BIAS: [f32; NUM_CLASSES] = [0.7315758, -3.0239654, 2.2925894];
 
 /// Lớp cuối với trọng số huấn luyện sẵn (trọng số ban đầu chung cho mọi lần chạy)
 pub fn head() -> Head<NUM_CLASSES> {

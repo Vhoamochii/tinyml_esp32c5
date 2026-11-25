@@ -1,0 +1,82 @@
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `release` profile [optimized] target(s) in 0.93s
+     Running `target/release/pc-sim --test`
+
+################ KIEM THU 6 O, lr = 0.2 | K = 25 o, M = 1944 byte | r = 0% | uu tien Q | Q toi da 9 | 2 luot hoc/buoc
+[DEBUG][MAIN] PADERBORN, luong kiem thu A ["K005", "KI18", "KA22"] | luong: 720 cua so N15 + 900 cua so N09 | 180 cua so N15 de rieng | 5 hat giong ghep cap
+
+=== LUONG A ["K005", "KI18", "KA22"] | LICH TRA NHAN: RAI ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+RAI        | chi pretrain   |  51.44+-0.00 |   0.00 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C1 tat hoc lai |  94.44+-0.00 |  99.44 |  32.78+-0.00 |    433 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C2 R vao truoc |  96.24+-0.09 |  99.67 |  31.89+-1.01 |    364 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+RAI        | C3 reservoir   |  94.76+-0.48 |  99.44 |   4.00+-3.57 |    521 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+[O] Theo tung o (trung binh 5 hat giong):
+[O] chi pretrain   | K005: N09  99.33, quen   0.00 | KI18: N09  55.00, quen   0.00 | KA22: N09   0.00, quen   0.00
+[O] C1 tat hoc lai | K005: N09  95.33, quen  10.00 | KI18: N09  94.33, quen   0.00 | KA22: N09  93.67, quen  88.33
+[O] C2 R vao truoc | K005: N09  97.07, quen   4.33 | KI18: N09  95.80, quen   0.00 | KA22: N09  95.87, quen  91.33
+[O] C3 reservoir   | K005: N09  96.87, quen   3.33 | KI18: N09  93.53, quen   0.00 | KA22: N09  93.87, quen   8.67
+
+=== LUONG A ["K005", "KI18", "KA22"] | LICH TRA NHAN: THEO DOT ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+THEO DOT   | chi pretrain   |  51.44+-0.00 |   0.00 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C1 tat hoc lai |  93.56+-0.00 |  98.89 |  33.89+-0.00 |    282 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C2 R vao truoc |  95.42+-0.40 |  99.44 |  33.11+-1.08 |    318 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+THEO DOT   | C3 reservoir   |  93.96+-0.94 |  99.44 |   4.44+-3.36 |    521 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+[O] Theo tung o (trung binh 5 hat giong):
+[O] chi pretrain   | K005: N09  99.33, quen   0.00 | KI18: N09  55.00, quen   0.00 | KA22: N09   0.00, quen   0.00
+[O] C1 tat hoc lai | K005: N09  94.00, quen  11.67 | KI18: N09  94.33, quen   0.00 | KA22: N09  92.33, quen  90.00
+[O] C2 R vao truoc | K005: N09  96.33, quen   7.00 | KI18: N09  94.87, quen   0.00 | KA22: N09  95.07, quen  92.33
+[O] C3 reservoir   | K005: N09  95.93, quen   3.33 | KI18: N09  92.80, quen   0.00 | KA22: N09  93.13, quen  10.00
+[DEBUG][MAIN] PADERBORN, luong kiem thu B ["K006", "KI21", "KA30"] | luong: 720 cua so N15 + 900 cua so N09 | 180 cua so N15 de rieng | 5 hat giong ghep cap
+
+=== LUONG B ["K006", "KI21", "KA30"] | LICH TRA NHAN: RAI ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+RAI        | chi pretrain   |  33.56+-0.00 |  35.00 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C1 tat hoc lai |  93.89+-0.00 |  99.44 |  31.67+-0.00 |    519 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |       0 |   0.00
+RAI        | C2 R vao truoc |  95.42+-0.32 |  99.67 |  31.33+-2.53 |    306 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+RAI        | C3 reservoir   |  94.00+-0.52 |  99.67 |  15.11+-8.60 |    535 (5/5) | 100.0% |     0 |     0 |       0 |    1620 |    1620 |   0.00
+[O] Theo tung o (trung binh 5 hat giong):
+[O] chi pretrain   | K006: N09 100.00, quen   0.00 | KI21: N09   0.00, quen   0.00 | KA30: N09   0.67, quen   0.00
+[O] C1 tat hoc lai | K006: N09  98.00, quen   5.00 | KI21: N09  92.00, quen   0.00 | KA30: N09  91.67, quen  90.00
+[O] C2 R vao truoc | K006: N09  98.60, quen   5.33 | KI21: N09  93.33, quen   0.00 | KA30: N09  94.33, quen  88.67
+[O] C3 reservoir   | K006: N09  98.93, quen   1.00 | KI21: N09  90.40, quen   0.00 | KA30: N09  92.67, quen  44.33
+
+=== LUONG B ["K006", "KI21", "KA30"] | LICH TRA NHAN: THEO DOT ===
+Lich nhan  | Phuong an      |       BA moi |  BA cu |         Quen |     Phuc hoi |   Khop |  Bo P |  Bo Q | Khong o | Hoc dau | Hoc lai | Cho TB
+THEO DOT   | chi pretrain   |  33.56+-0.00 |  35.00 |   0.00+-0.00 |     96 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C1 tat hoc lai |  92.11+-0.00 |  98.89 |  37.22+-0.00 |    519 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |       0 |   1.78
+THEO DOT   | C2 R vao truoc |  93.58+-0.73 |  99.44 |  31.67+-2.12 |    436 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+THEO DOT   | C3 reservoir   |  91.69+-1.67 |  99.44 |  16.67+-7.34 |    403 (5/5) | 100.0% |     0 |     0 |       0 |    1613 |    1611 |   1.78
+[O] Theo tung o (trung binh 5 hat giong):
+[O] chi pretrain   | K006: N09 100.00, quen   0.00 | KI21: N09   0.00, quen   0.00 | KA30: N09   0.67, quen   0.00
+[O] C1 tat hoc lai | K006: N09  94.00, quen  23.33 | KI21: N09  92.00, quen   0.00 | KA30: N09  90.33, quen  88.33
+[O] C2 R vao truoc | K006: N09  94.27, quen   9.67 | KI21: N09  93.33, quen   0.00 | KA30: N09  93.13, quen  85.33
+[O] C3 reservoir   | K006: N09  96.73, quen   0.67 | KI21: N09  91.27, quen   0.00 | KA30: N09  87.07, quen  49.33
+
+################ TONG HOP 6 O KIEM THU | K = 25 o, r = 0%, uu tien Q, lr = 0.2
+
+=== TONG HOP | LICH TRA NHAN: RAI ===
+Phuong an      |     BA moi |    SD giua o |       Quen |    SD giua o |        O thap nhat (N09)
+chi pretrain   |      42.50 |        49.10 |       0.00 |         0.00 |                KA22 0.00
+C1 tat hoc lai |      94.17 |         2.34 |      32.22 |        44.27 |               KA30 91.67
+C2 R vao truoc |      95.83 |         1.88 |      31.61 |        45.29 |               KI21 93.33
+C3 reservoir   |      94.38 |         3.06 |       9.56 |        17.35 |               KI21 90.40
+
+=== TONG HOP | LICH TRA NHAN: THEO DOT ===
+Phuong an      |     BA moi |    SD giua o |       Quen |    SD giua o |        O thap nhat (N09)
+chi pretrain   |      42.50 |        49.10 |       0.00 |         0.00 |                KA22 0.00
+C1 tat hoc lai |      92.83 |         1.56 |      35.56 |        42.42 |               KA30 90.33
+C2 R vao truoc |      94.50 |         1.19 |      32.39 |        43.94 |               KA30 93.13
+C3 reservoir   |      92.82 |         3.48 |      10.56 |        19.37 |               KA30 87.07
+
+Do nhay theo o (N09) = % cua so N09 cua o do duoc doan dung ngay khi den.
+Quen theo o = do nhay tren cac cua so N15 de rieng cua o do, truoc khi doi toc do tru sau thich nghi.
+SD giua o = do lech chuan giua 6 o (moi o da lay trung binh 5 hat giong).
+
+C1 = hoc tren thiet bi, tat hoc lai | C2 = hoc lai, R vao truoc ra truoc (de cuong) | C3 = hoc lai, R reservoir
+a+-b = trung binh +- do lech chuan giua 5 hat giong.
+BA moi = BA tren cac cua so N09, cham ngay khi cua so den (truoc khi co nhan).
+BA cu = BA tren cac cua so N15 de rieng, ngay truoc khi doi toc do.
+Quen = BA cu - BA tren cung cac cua so do sau thich nghi (diem %).
+Phuc hoi = so cua so toc do moi de BA truot (96 cua so) tro ve muc truoc khi doi.
