@@ -21,6 +21,12 @@ pub const DEFAULT_SEED: u32 = 0x9E37_79B9;
 pub const ROLL_W: usize = 60;
 pub const SUSTAIN_W: usize = 10; // E1e: so cua so day lien tiep de goi la ben vung
 
+/// Q1: lich hoc lai. Interleaved = ban cu, giu bit-for-bit oracle.
+/// QFirst: chi hoc lai khi Q rong; moi lan hoc dau tao 1 credit, tran K.
+/// Off: doi chung tat hoc lai; R van chiem o (r=0 khong phai Off).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ReplayMode { Interleaved, QFirst, Off }
+
 pub struct Row {
     pub bearing: String,
     pub cls: u8,
@@ -213,8 +219,17 @@ pub fn run_case(
 }
 
 /// E2b-a: generic theo KP de quat kich thuoc pool (ap luc bo nho).
+/// Wrapper giu chu ky cu: mac dinh Interleaved de tai lap oracle.
 pub fn run_case_seeded<const KP: usize>(
     rows: &[Row], r_floor: usize, sched: ScheduleMode, label: &str, q: &Quant, seed: u32,
+) -> RunResult {
+    run_case_replay::<KP>(rows, r_floor, sched, label, q, seed, ReplayMode::Interleaved)
+}
+
+/// Q1: ban day du co chon lich hoc lai.
+pub fn run_case_replay<const KP: usize>(
+    rows: &[Row], r_floor: usize, sched: ScheduleMode, label: &str, q: &Quant, seed: u32,
+    mode: ReplayMode,
 ) -> RunResult {
     let tag = format!("{} r={} K={} {}", sched_desc(sched), r_floor, KP, label);
     let reserve: Vec<&Row> = rows.iter().filter(|r| is_reserve(r)).collect();
@@ -232,6 +247,7 @@ pub fn run_case_seeded<const KP: usize>(
     let mut ba_before = 0.0f64;
     let mut max_abs_z = 0.0f32;
     let mut push_drops: u32 = 0;
+    let mut credits: usize = 0; // Q1: QFirst
 
     let mut roll = RollingBa::new();
     let mut n09_seen = 0usize;
@@ -299,8 +315,23 @@ pub fn run_case_seeded<const KP: usize>(
             }
             head.sgd_step(c.z, q, c.label.max(0) as u8, LR);
             pool.promote_to_replay(c);
-            if let Some(rc) = pool.replay_draw(&mut rnd) {
-                head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+            match mode {
+                ReplayMode::Interleaved => {
+                    if let Some(rc) = pool.replay_draw(&mut rnd) {
+                        head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                    }
+                }
+                ReplayMode::QFirst => { credits = (credits + 1).min(KP); }
+                ReplayMode::Off => {}
+            }
+        }
+        // Q1: QFirst chi hoc lai khi Q da rong; moi credit tieu 1 luot.
+        if mode == ReplayMode::QFirst {
+            while credits > 0 {
+                credits -= 1;
+                if let Some(rc) = pool.replay_draw(&mut rnd) {
+                    head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                }
             }
         }
         times.push(t0.elapsed().as_micros() as u64);
@@ -319,6 +350,19 @@ pub fn run_case_seeded<const KP: usize>(
             }
             head.sgd_step(c.z, q, c.label.max(0) as u8, LR);
             pool.promote_to_replay(c);
+            match mode {
+                ReplayMode::Interleaved => {} // giu ban cu: cuoi luong khong hoc lai
+                ReplayMode::QFirst => { credits = (credits + 1).min(KP); }
+                ReplayMode::Off => {}
+            }
+        }
+        if mode == ReplayMode::QFirst {
+            while credits > 0 {
+                credits -= 1;
+                if let Some(rc) = pool.replay_draw(&mut rnd) {
+                    head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                }
+            }
         }
         dstep += 1;
     }
