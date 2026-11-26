@@ -1,3 +1,0 @@
-cargo:rustc-link-search=/home/adminstrator/Work/Project_ESP32C5/target_pc/riscv32imac-unknown-none-elf/debug/build/esp32c5/a49db594d068c93a/out
-cargo:rerun-if-changed=device.x
-cargo:rerun-if-changed=build.rs

@@ -1,41 +1,115 @@
 #![no_std]
 #![no_main]
-#![deny(
-    clippy::mem_forget,
-    reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
-    holding buffers for the duration of a data transfer."
-)]
-#![deny(clippy::large_stack_frames)]
 
+use core::cell::UnsafeCell;
+use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
-use esp_hal::time::{Duration, Instant};
+use esp_println::println;
+use fw_esp32c5::algo::{
+    EPOCH_FEATURES, EPOCH_LABELS, LABEL_SCHEDULE, MemPool, PREDICT_STEPS, TOTAL_STEPS,
+};
 
-#[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    loop {}
-}
-
-// This creates a default app-descriptor required by the esp-idf bootloader.
-// For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
 
-#[allow(
-    clippy::large_stack_frames,
-    reason = "it's not unusual to allocate larger buffers etc. in main"
-)]
+struct StaticPool<const K: usize>(UnsafeCell<MemPool<K>>);
+unsafe impl<const K: usize> Sync for StaticPool<K> {}
+
+static POOL_EPOCH: StaticPool<10> = StaticPool(UnsafeCell::new(MemPool::new(0)));
+static POOL_DUP: StaticPool<10> = StaticPool(UnsafeCell::new(MemPool::new(0)));
+static POOL_FULL: StaticPool<4> = StaticPool(UnsafeCell::new(MemPool::new(0)));
+
+fn delay() {
+    for _ in 0..100000 {
+        core::hint::spin_loop();
+    }
+}
+
+fn run_epoch() {
+    println!("R1 START");
+    delay();
+    let pool = unsafe { &mut *POOL_EPOCH.0.get() };
+    *pool = MemPool::new(0);
+    let mut learned = 0u32;
+
+    for step in 0..TOTAL_STEPS {
+        if step < PREDICT_STEPS {
+            let z = EPOCH_FEATURES[step];
+            println!("S{} PRED", step);
+            delay();
+            let _ = pool.push(z);
+        }
+        if let Some(lid) = LABEL_SCHEDULE[step] {
+            let lab = EPOCH_LABELS[lid as usize];
+            let ok = pool.on_label(lid, lab).is_ok();
+            println!("S{} LAB {} {}", step, lid, ok);
+            delay();
+        }
+        while let Some(c) = pool.pop_ready() {
+            learned += 1;
+            println!("S{} LEARN {}", step, c.id);
+            delay();
+            pool.promote_to_replay(c);
+        }
+    }
+    println!("R1 END L={} M={} miss={} drop={}", learned, pool.matched, pool.miss_labels, pool.drop_total());
+    delay();
+}
+
+fn run_dup() {
+    println!("R2 START");
+    delay();
+    let pool = unsafe { &mut *POOL_DUP.0.get() };
+    *pool = MemPool::new(0);
+    let z = EPOCH_FEATURES[0];
+    let lab = EPOCH_LABELS[0];
+    let _ = pool.push(z);
+    let _ = pool.on_label(0, lab);
+    if let Some(c) = pool.pop_ready() {
+        pool.promote_to_replay(c);
+    }
+    let ok = pool.on_label(0, lab).is_ok();
+    println!("R2 END L={} ok={}", pool.learned_first, ok);
+    delay();
+}
+
+fn run_full() {
+    println!("R3 START");
+    delay();
+    let pool = unsafe { &mut *POOL_FULL.0.get() };
+    *pool = MemPool::new(0);
+    for i in 0..5u32 {
+        let z = EPOCH_FEATURES[i as usize];
+        let _ = pool.push(z);
+    }
+    for lid in [0u32, 1, 2, 3] {
+        let lab = EPOCH_LABELS[lid as usize];
+        let _ = pool.on_label(lid, lab);
+    }
+    let mut learned = 0u32;
+    while let Some(c) = pool.pop_ready() {
+        learned += 1;
+        pool.promote_to_replay(c);
+    }
+    println!("R3 L={}", learned);
+    delay();
+    for (k, (id, reason)) in pool.drop_journal().iter().enumerate() {
+        println!("DROP {} {} {:?}", k, id, reason);
+        delay();
+    }
+    println!("R3 END miss={} drop={}", pool.miss_labels, pool.drop_total());
+    delay();
+}
+
 #[main]
 fn main() -> ! {
-    // generator version: 2.0.0
-    // generator parameters: -o esp32c5
-
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let _peripherals = esp_hal::init(config);
-
-    loop {
-        let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
-    }
-
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.2.2/examples
+    println!("FW START");
+    delay();
+    run_epoch();
+    run_dup();
+    run_full();
+    println!("FW END");
+    loop {}
 }
