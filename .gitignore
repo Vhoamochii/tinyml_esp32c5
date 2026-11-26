@@ -5,3 +5,6 @@ __pycache__/
 *.tar.gz
 pc/data/paderborn_vibdata
 results/id_journal_*.csv
+pc/data/backup_20261126_contaminated/
+*.log
+/target_pc/

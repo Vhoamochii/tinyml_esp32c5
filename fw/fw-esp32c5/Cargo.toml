@@ -9,6 +9,7 @@ name = "fw-esp32c5"
 path = "./src/bin/main.rs"
 
 [dependencies]
+tinyol-core = { path = "../../shared/tinyol-core" }
 libm = "0.2"
 esp-hal = { version = "~1.2.2", features = ["esp32c5"] }
 
@@ -29,3 +30,5 @@ codegen-units = 1     # LLVM can perform better optimizations using a single thr
 debug         = 2     # prefer slower builds but better debugging experience
 lto           = 'fat'
 opt-level     = 's'
+
+[workspace]
