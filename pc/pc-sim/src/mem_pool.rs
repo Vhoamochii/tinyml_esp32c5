@@ -4,10 +4,14 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CellState { Free, Pending, Ready, Replay }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum DropReason { PoolFull }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+/// B1: ly do mat mau, ghi kem ID vao nhat ky (de cuong muc 3).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum EvictReason { ReclaimR, ReclaimP, PushFull, PromoteNoSlot }
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LabelError { NotFound, AlreadyLabeled, AlreadyLearned, EvictedMiss }
 
 #[derive(Clone, Copy)]
@@ -35,6 +39,11 @@ pub struct MemPool<const K: usize> {
     pub recovered_r: u32,
     pub dup_labels: u32,
     last_replayed: u32,      // ID vua hoc luot lien truoc (bo qua khi quay so)
+    // B1: nhat ky (ID, ly do) — giu 64 su kien dau, dem tong bang drop_total.
+    // Khong alloc, phu hop no_std; kich thuoc Cell khong doi nen ram_proxy giu nguyen.
+    drop_log: [(u32, EvictReason); 64],
+    drop_len: usize,
+    drop_total: u32,
 }
 
 impl<const K: usize> MemPool<K> {
@@ -44,8 +53,21 @@ impl<const K: usize> MemPool<K> {
             pushed: 0, matched: 0, miss_labels: 0, learned_first: 0,
             replay_learns: 0, recovered_p: 0, recovered_r: 0, dup_labels: 0,
             last_replayed: u32::MAX,
+            drop_log: [(0, EvictReason::PushFull); 64], drop_len: 0, drop_total: 0,
         }
     }
+
+    fn note_drop(&mut self, id: u32, r: EvictReason) {
+        self.drop_total += 1;
+        if self.drop_len < 64 {
+            self.drop_log[self.drop_len] = (id, r);
+            self.drop_len += 1;
+        }
+    }
+
+    /// B1: 64 su kien bo mau dau tien theo dung thu tu; tong xem drop_total().
+    pub fn drop_journal(&self) -> &[(u32, EvictReason)] { &self.drop_log[..self.drop_len] }
+    pub fn drop_total(&self) -> u32 { self.drop_total }
 
     pub fn cell_size_bytes() -> usize { core::mem::size_of::<Cell>() }
 
@@ -85,12 +107,14 @@ impl<const K: usize> MemPool<K> {
         if self.count(CellState::Replay) > self.r_floor {
             if let Some(j) = old_r {
                 self.recovered_r += 1;
+                self.note_drop(self.cells[j].id, EvictReason::ReclaimR);
                 self.cells[j] = EMPTY;
                 return Some(j);
             }
         }
         if let Some(j) = old_p {
             self.recovered_p += 1;
+            self.note_drop(self.cells[j].id, EvictReason::ReclaimP);
             self.cells[j] = EMPTY;
             return Some(j);
         }
@@ -102,7 +126,10 @@ impl<const K: usize> MemPool<K> {
         let id = self.next_id;
         let slot = match self.reclaim_one() {
             Some(j) => j,
-            None => return Err(DropReason::PoolFull),
+            None => {
+                self.note_drop(id, EvictReason::PushFull);
+                return Err(DropReason::PoolFull);
+            }
         };
         self.cells[slot] = Cell { id, label: -1, z, state: CellState::Pending, age: self.clock };
         self.next_id += 1;
@@ -169,6 +196,7 @@ impl<const K: usize> MemPool<K> {
             }
             i += 1;
         }
+        self.note_drop(c.id, EvictReason::PromoteNoSlot);
         false
     }
 

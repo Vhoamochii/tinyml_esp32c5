@@ -1,10 +1,13 @@
-//! E1+E1e+E2b-a: luong bang tren du lieu that.
+//! E1+E1e+E2b-a+Q1+E-journal: luong bang tren du lieu that.
 //! - Reserve (N15, record >= 17) tach khoi luong/pool/hoc lai, chi dung cham quen.
 //! - BA moi chi cham tren cua so N09, ngay khi den, TRUOC cap nhat.
 //! - Seed chi dieu khien quay so replay; thu tu CSV bat bien giua cac case.
 //! - E1b: RollingBa cua so 60; phuc hoi cham lan dau khi cua so day dat >= ba_before.
 //! - E1e: phuc hoi BEN VUNG = SUSTAIN_W cua so day lien tiep dat >= ba_before.
 //! - E2b-a: ham generic theo KP (kich thuoc pool); dem push_drops khi pool day.
+//! - Q1: ReplayMode Interleaved (mac dinh, giu bit-for-bit oracle) / QFirst / Off.
+//! - E-journal: nhat ky theo ID (pid, pred, nhan, hoc dau, hoc lai, ly do bo);
+//!   chi xuat file khi tag bat dau "JRN:" de tranh phinh dia.
 //! Logic hoc giu nguyen byte-for-byte so voi D6/D7.
 
 use crate::head_linear::{LinearHead, Quant, N_FEATURES};
@@ -226,7 +229,7 @@ pub fn run_case_seeded<const KP: usize>(
     run_case_replay::<KP>(rows, r_floor, sched, label, q, seed, ReplayMode::Interleaved)
 }
 
-/// Q1: ban day du co chon lich hoc lai.
+/// Q1 + E-journal: ban day du co chon lich hoc lai va nhat ky theo ID.
 pub fn run_case_replay<const KP: usize>(
     rows: &[Row], r_floor: usize, sched: ScheduleMode, label: &str, q: &Quant, seed: u32,
     mode: ReplayMode,
@@ -249,6 +252,13 @@ pub fn run_case_replay<const KP: usize>(
     let mut push_drops: u32 = 0;
     let mut credits: usize = 0; // Q1: QFirst
 
+    // E-journal: nhat ky theo ID. Chi xuat file khi tag bat dau "JRN:".
+    let n_rows = stream.len();
+    let mut j_pid = vec![-1i64; n_rows];   // -1: push bi bo (PushFull)
+    let mut j_pred = vec![0u8; n_rows];    // pred cho MOI dong, ke ca dong bi bo
+    let mut j_learn = vec![u32::MAX; n_rows];
+    let mut j_rep = vec![0u32; n_rows];
+
     let mut roll = RollingBa::new();
     let mut n09_seen = 0usize;
     let mut recovery_windows: Option<usize> = None;
@@ -265,6 +275,8 @@ pub fn run_case_replay<const KP: usize>(
             let v = (row.z[i] as f32).abs() * q.scale[i];
             if v > max_abs_z { max_abs_z = v; }
         }
+        // E-journal: predict thuan doc, khong doi trang thai, gia tri trung ban cu
+        let p_now = head.predict(row.z, q);
         if row.cond == "N09_M07_F10" && !da_doi {
             da_doi = true;
             let snap = head.snapshot();
@@ -276,7 +288,7 @@ pub fn run_case_replay<const KP: usize>(
             );
         }
         if row.cond == "N09_M07_F10" {
-            let p = head.predict(row.z, q);
+            let p = p_now;
             preds.push((row.bearing.clone(), row.cls, p));
             n09_seen += 1;
             roll.push(row.cls, p == row.cls);
@@ -298,9 +310,10 @@ pub fn run_case_replay<const KP: usize>(
                 }
             }
         }
-        // E2b-a: dem mau bi bo vi pool day thay vi bo im
-        if pool.push(row.z).is_err() {
-            push_drops += 1;
+        // E2b-a + E-journal: ghi pid/pred tung dong; mau bi bo van duoc cham du doan
+        match pool.push(row.z) {
+            Ok(pid) => { j_pid[step] = pid as i64; j_pred[step] = p_now; }
+            Err(_) => { push_drops += 1; j_pred[step] = p_now; }
         }
         while ei < events.len() && events[ei].0 == step {
             let (_, id, lb) = events[ei];
@@ -314,11 +327,13 @@ pub fn run_case_replay<const KP: usize>(
                 latencies.push(step.saturating_sub(label_step[c.id as usize] as usize) as u64);
             }
             head.sgd_step(c.z, q, c.label.max(0) as u8, LR);
+            if (c.id as usize) < n_rows { j_learn[c.id as usize] = step as u32; }
             pool.promote_to_replay(c);
             match mode {
                 ReplayMode::Interleaved => {
                     if let Some(rc) = pool.replay_draw(&mut rnd) {
                         head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                        if (rc.id as usize) < n_rows { j_rep[rc.id as usize] += 1; }
                     }
                 }
                 ReplayMode::QFirst => { credits = (credits + 1).min(KP); }
@@ -331,12 +346,14 @@ pub fn run_case_replay<const KP: usize>(
                 credits -= 1;
                 if let Some(rc) = pool.replay_draw(&mut rnd) {
                     head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                    if (rc.id as usize) < n_rows { j_rep[rc.id as usize] += 1; }
                 }
             }
         }
         times.push(t0.elapsed().as_micros() as u64);
     }
 
+    // Cuoi luong: giao het nhan con cho (de cuong muc 5)
     let mut dstep = stream.len();
     while ei < events.len() {
         let (_, id, lb) = events[ei];
@@ -349,6 +366,7 @@ pub fn run_case_replay<const KP: usize>(
                 latencies.push(dstep.saturating_sub(label_step[c.id as usize] as usize) as u64);
             }
             head.sgd_step(c.z, q, c.label.max(0) as u8, LR);
+            if (c.id as usize) < n_rows { j_learn[c.id as usize] = dstep as u32; }
             pool.promote_to_replay(c);
             match mode {
                 ReplayMode::Interleaved => {} // giu ban cu: cuoi luong khong hoc lai
@@ -361,6 +379,7 @@ pub fn run_case_replay<const KP: usize>(
                 credits -= 1;
                 if let Some(rc) = pool.replay_draw(&mut rnd) {
                     head.sgd_step(rc.z, q, rc.label.max(0) as u8, LR);
+                    if (rc.id as usize) < n_rows { j_rep[rc.id as usize] += 1; }
                 }
             }
         }
@@ -373,6 +392,37 @@ pub fn run_case_replay<const KP: usize>(
         tag, rec_after[0], rec_after[1], rec_after[2], ba_after, head_norm(&head), max_abs_z
     );
     let forget = if da_doi { ba_before - ba_after } else { 0.0 };
+
+    // E-journal: xuat nhat ky theo ID (chi khi tag "JRN:"). Cot label/learn =
+    // 4294967295 nghia la chua xay ra. Ly do bo suy ra chinh xac: pid<0 ->
+    // push_full; co pid nhung nhan khong bao gio ve -> reclaim_p.
+    if label.starts_with("JRN:") {
+        let mn = match mode {
+            ReplayMode::Interleaved => "inter",
+            ReplayMode::QFirst => "qfirst",
+            ReplayMode::Off => "off",
+        };
+        let san: String = label.chars()
+            .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' }).collect();
+        let mut out = String::from(
+            "row_step,bearing,class,pid,pred,label_step,learn_step,replays,drop_reason\n");
+        for i in 0..n_rows {
+            let pid = j_pid[i];
+            let (ls, hs, rp, reason) = if pid < 0 {
+                (u32::MAX, u32::MAX, 0u32, "push_full")
+            } else {
+                let k = pid as usize;
+                let ls = label_step[k];
+                let reason = if ls == u32::MAX { "reclaim_p" } else { "" };
+                (ls, j_learn[k], j_rep[k], reason)
+            };
+            let r = &stream[i];
+            out.push_str(&format!("{},{},{},{},{},{},{},{},{}\n",
+                i, r.bearing, r.cls, pid, j_pred[i], ls, hs, rp, reason));
+        }
+        std::fs::create_dir_all("results").unwrap();
+        std::fs::write(format!("results/id_journal_{}_{}_{}.csv", san, mn, seed), &out).unwrap();
+    }
 
     let mut pb: BTreeMap<(String, u8), (u32, u32)> = BTreeMap::new();
     for (b, y, p) in &preds {

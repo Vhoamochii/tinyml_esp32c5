@@ -4,3 +4,4 @@ __pycache__/
 *.mat
 *.tar.gz
 pc/data/paderborn_vibdata
+results/id_journal_*.csv
