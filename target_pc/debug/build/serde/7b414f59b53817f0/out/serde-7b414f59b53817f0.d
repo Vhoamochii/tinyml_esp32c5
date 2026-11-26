@@ -1,0 +1,14 @@
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/7b414f59b53817f0/out/serde-7b414f59b53817f0.d: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/00523ba0df1d2ff9/out/private.rs
+
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/7b414f59b53817f0/out/libserde-7b414f59b53817f0.rlib: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/00523ba0df1d2ff9/out/private.rs
+
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/7b414f59b53817f0/out/libserde-7b414f59b53817f0.rmeta: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/00523ba0df1d2ff9/out/private.rs
+
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs:
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/00523ba0df1d2ff9/out/private.rs:
+
+# env-dep:OUT_DIR=/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/serde/00523ba0df1d2ff9/out

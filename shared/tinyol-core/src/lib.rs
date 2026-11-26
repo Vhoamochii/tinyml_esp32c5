@@ -3,3 +3,5 @@
 
 pub mod xor_tanh;
 pub mod sample_queue;
+pub mod mem_pool;
+pub mod head_linear;

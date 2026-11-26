@@ -190,6 +190,7 @@ dependencies = [
  "esp-bootloader-esp-idf",
  "esp-hal",
  "esp-println",
+ "libm",
  "tinyol-core",
 ]
 

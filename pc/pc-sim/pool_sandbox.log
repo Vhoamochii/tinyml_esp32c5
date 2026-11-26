@@ -1,0 +1,41 @@
+warning: variable does not need to be mutable
+   --> pc/pc-sim/src/head_linear.rs:152:16
+    |
+152 |         ({ let mut z = [0i8; N_FEATURES]; z }, 0),
+    |                ----^
+    |                |
+    |                help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pc-sim` (lib) generated 1 warning (run `cargo fix --lib -p pc-sim` to apply 1 suggestion)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.22s
+     Running tests/pool_sandbox.rs (/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/pc-sim/85dc0d54d49ca857/out/pool_sandbox-85dc0d54d49ca857)
+
+running 5 tests
+[TEST][Pool][pending_sau_buoc4] expected=[3, 4] actual=[3, 4] PASS
+[TEST][Pool][learned_first] expected=10 actual=10 PASS
+[TEST][Pool][moi_id_hoc_dung_1_lan] expected=10 actual=10 PASS
+[TEST][Pool][q_full_err] expected=QFull actual=QFull PASS
+[TEST][Pool][drop_q_full] expected=1 actual=1 PASS
+[TEST][Pool][learned_first] expected=1 actual=1 PASS
+[TEST][Pool][dup_err] expected=AlreadyLearned actual=AlreadyLearned PASS
+[TEST][Pool][learned_first_giu_nguyen] expected=1 actual=1 PASS
+[TEST][Pool][rong_learn_none] expected=true actual=true PASS
+[TEST][Pool][k1_pushed] expected=2 actual=2 PASS
+[TEST][Pool][k1_evict_p] expected=1 actual=1 PASS
+[TEST][Pool][r0_evict_r] expected=1 actual=1 PASS
+[TEST][Pool][r0_evict_p] expected=0 actual=0 PASS
+[TEST][Pool][r3_evict_r] expected=0 actual=0 PASS
+[TEST][Pool][r3_evict_p] expected=1 actual=1 PASS
+[TEST][Pool][r3_giu_mau_cu_id0] expected=true actual=true PASS
+[TEST][Pool][r0_mat_mau_cu_id0] expected=true actual=true PASS
+test tests::epoch_10_id_theo_bang3 ... ok
+test tests::q_day_bo_mau_ghi_ly_do ... ok
+test tests::nhan_trung_khong_hoc_lai_lan_dau ... ok
+test tests::bien_k1_va_pool_rong ... ok
+test tests::r_policy_that_su_rang_buoc ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

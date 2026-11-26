@@ -1,0 +1,12 @@
+cargo:rustc-check-cfg=cfg(riscvi)
+cargo:rustc-check-cfg=cfg(riscvm)
+cargo:rustc-check-cfg=cfg(riscvf)
+cargo:rustc-check-cfg=cfg(riscvd)
+cargo:rustc-env=RISCV_RT_BASE_ISA=rv32i
+cargo:rustc-env=RISCV_RT_LLVM_ARCH_PATCH=rv32im
+cargo:rerun-if-env-changed=RISCV_RT_BASE_ISA
+cargo:rerun-if-env-changed=RISCV_RT_LLVM_ARCH_PATCH
+cargo:rustc-cfg=riscvi
+cargo:rustc-cfg=riscvm
+cargo:rustc-link-search=/home/adminstrator/Work/Project_ESP32C5/target_pc/riscv32imac-unknown-none-elf/debug/build/riscv-rt/0492fc9ca82804dc/out
+cargo:rerun-if-changed=link.x

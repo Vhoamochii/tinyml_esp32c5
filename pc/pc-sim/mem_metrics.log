@@ -1,0 +1,38 @@
+warning: variable does not need to be mutable
+   --> pc/pc-sim/src/head_linear.rs:152:16
+    |
+152 |         ({ let mut z = [0i8; N_FEATURES]; z }, 0),
+    |                ----^
+    |                |
+    |                help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pc-sim` (lib) generated 1 warning (run `cargo fix --lib -p pc-sim` to apply 1 suggestion)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running tests/mem_metrics.rs (/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/pc-sim/fdf0b7dfe1a7876b/out/mem_metrics-fdf0b7dfe1a7876b)
+
+running 1 test
+[METRICS] s(Cell)=32 byte (z16+id4+label2+state1+age8+dem)
+[METRICS] MemPool<256>=8776 byte, H(quan ly ngoai mang)=584 byte
+[METRICS] LinearHead<3>=204 byte
+[METRICS] RAM that K=256 = 8980 byte (ram_proxy 8192 chua tinh H)
+[METRICS] M=8192 byte -> K_real=237
+[METRICS] M=4096 byte -> K_real=109
+[METRICS] M=2048 byte -> K_real=45
+[METRICS] M=1024 byte -> K_real=13
+
+thread 'mem_metrics' (30358) panicked at pc/pc-sim/tests/mem_metrics.rs:17:17:
+attempt to subtract with overflow
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test mem_metrics ... FAILED
+
+failures:
+
+failures:
+    mem_metrics
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test mem_metrics`

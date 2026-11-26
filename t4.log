@@ -1,0 +1,187 @@
+[T4] CARGO_TARGET_DIR=/home/adminstrator/Work/Project_ESP32C5/target_pc
+=== [T4a] Regression table_harness ===
+   Compiling libm v0.2.16
+   Compiling tinyol-core v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/shared/tinyol-core)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+warning: variable does not need to be mutable
+   --> pc/pc-sim/src/head_linear.rs:152:16
+    |
+152 |         ({ let mut z = [0i8; N_FEATURES]; z }, 0),
+    |                ----^
+    |                |
+    |                help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pc-sim` (lib) generated 1 warning (run `cargo fix --lib -p pc-sim` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.36s
+     Running tests/table_harness.rs (/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/pc-sim/d47f25369105707a/out/table_harness-d47f25369105707a)
+
+running 2 tests
+[TEST][SCHEDULE][Spread] expected=4.00 actual=4.00 PASS
+[TEST][SCHEDULE][Burst]   expected=4.00 actual=4.00 PASS
+test schedule_math ... ok
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python][RECALL_BEFORE] c0=100.0 c1=99.8 c2=99.6 ba=99.80 w_norm=1.779e1 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python][RECALL_AFTER] c0=27.2 c1=89.8 c2=56.6 ba=57.96 w_norm=3.763e1 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 Case1_Rust_Python] ba_new=95.41 ba_truoc=99.80 ba_sau=57.96 forget=41.84 match=100.00 ram=8192 p95=5us over=0.00 learned=54089 replay=53889 miss=0 stream=54089 reserve=6022
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python][RECALL_BEFORE] c0=100.0 c1=99.8 c2=99.6 ba=99.77 w_norm=1.777e1 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python][RECALL_AFTER] c0=27.2 c1=90.2 c2=58.2 ba=58.62 w_norm=3.797e1 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 Case1_Rust_Python] ba_new=95.75 ba_truoc=99.77 ba_sau=58.62 forget=41.15 match=100.00 ram=8192 p95=28us over=0.00 learned=54089 replay=53854 miss=0 stream=54089 reserve=6022
+[TABLE][DONE] da ghi results/case1.csv
+test table_case1 ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.74s
+
+=== [T4b] protocol_val - quet r, khoa r tren 3 o chon cau hinh ===
+warning: variable does not need to be mutable
+   --> pc/pc-sim/src/head_linear.rs:152:16
+    |
+152 |         ({ let mut z = [0i8; N_FEATURES]; z }, 0),
+    |                ----^
+    |                |
+    |                help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pc-sim` (lib) generated 1 warning (run `cargo fix --lib -p pc-sim` to apply 1 suggestion)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s
+     Running tests/protocol_val.rs (/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/pc-sim/7e9fd797375a28ac/out/protocol_val-7e9fd797375a28ac)
+
+running 1 test
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[LOCK][roi] r=0 ba=99.93 forget=9.82 moc_r0=9.82
+[LOCK][dot] r=0 ba=99.92 forget=9.99 moc_r0=9.99
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[C4][roi][inter] ba=99.93 forget=9.82
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=77.7 c2=100.0 ba=92.56 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=50.4 c2=100.0 ba=83.46 w_norm=8.768e0 max_abs_z=4.000e0
+[C4][roi][qfirst] ba=99.93 forget=9.83
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[C4][dot][inter] ba=99.92 forget=9.99
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.976e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=89.9 c2=100.0 ba=96.62 w_norm=8.963e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=75.0 c2=100.0 ba=91.65 w_norm=8.859e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.964e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=59.9 c2=100.0 ba=86.65 w_norm=8.796e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=75.2 c2=100.0 ba=91.75 w_norm=8.894e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=61.8 c2=100.0 ba=87.26 w_norm=8.790e0 max_abs_z=4.000e0
+[C4][dot][qfirst] ba=99.92 forget=9.21
+[VAL][DONE] ghi results/val_c1.csv, val_lock.csv, val_c4.csv
+test val_protocol_c1_c2_c4 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.02s
+
+[T4] noi dung val_lock.csv:
+sched,r_pct,ba_mean,forget_mean
+roi,0,99.9334,9.8181
+dot,0,99.9241,9.9870
+[DONE] T4 PASS - r da khoa theo tung lich nhan. Tap 6 o test VAN CHUA mo.

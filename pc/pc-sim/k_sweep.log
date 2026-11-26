@@ -1,0 +1,461 @@
+warning: variable does not need to be mutable
+   --> pc/pc-sim/src/head_linear.rs:152:16
+    |
+152 |         ({ let mut z = [0i8; N_FEATURES]; z }, 0),
+    |                ----^
+    |                |
+    |                help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pc-sim` (lib) generated 1 warning (run `cargo fix --lib -p pc-sim` to apply 1 suggestion)
+   Compiling pc-sim v0.1.0 (/home/adminstrator/Work/Project_ESP32C5/pc/pc-sim)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.22s
+     Running tests/k_sweep.rs (/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/pc-sim/e7bba40ea0254c83/out/k_sweep-e7bba40ea0254c83)
+
+running 1 test
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[KSWEEP][K=256][roi][r=0] ba=99.93 forget=9.82 miss=0 drops=0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[KSWEEP][K=256][roi][r=25] ba=99.93 forget=9.82 miss=0 drops=0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.980e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=79.4 c2=100.0 ba=93.14 w_norm=8.924e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.970e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=62.9 c2=100.0 ba=87.62 w_norm=8.853e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=77.8 c2=100.0 ba=92.59 w_norm=8.877e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.996e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=82.2 c2=100.0 ba=94.05 w_norm=8.915e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.975e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.768e0 max_abs_z=4.000e0
+[KSWEEP][K=256][roi][r=50] ba=99.93 forget=9.82 miss=0 drops=0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[KSWEEP][K=256][roi][OFF] ba=99.92 forget=20.01
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[KSWEEP][K=256][dot][r=0] ba=99.92 forget=9.99 miss=0 drops=0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[KSWEEP][K=256][dot][r=25] ba=99.92 forget=9.99 miss=0 drops=0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=67.0 c2=100.0 ba=88.99 w_norm=8.855e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.993e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=69.3 c2=100.0 ba=89.77 w_norm=8.824e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=80.6 c2=100.0 ba=93.53 w_norm=8.903e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=63.6 c2=100.0 ba=87.88 w_norm=8.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=128 K=256 val][RECALL_AFTER] c0=100.0 c1=69.7 c2=100.0 ba=89.90 w_norm=8.882e0 max_abs_z=4.000e0
+[KSWEEP][K=256][dot][r=50] ba=99.92 forget=9.99 miss=0 drops=0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=256 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[KSWEEP][K=256][dot][OFF] ba=99.91 forget=18.97
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.960e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=67.9 c2=100.0 ba=89.31 w_norm=8.854e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=74.3 c2=100.0 ba=91.42 w_norm=8.789e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=75.6 c2=100.0 ba=91.88 w_norm=8.835e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=51.8 c2=100.0 ba=83.92 w_norm=8.758e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=57.8 c2=100.0 ba=85.93 w_norm=8.775e0 max_abs_z=4.000e0
+[KSWEEP][K=128][roi][r=0] ba=99.92 forget=11.51 miss=0 drops=0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.960e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=67.9 c2=100.0 ba=89.31 w_norm=8.854e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=74.3 c2=100.0 ba=91.42 w_norm=8.789e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=75.6 c2=100.0 ba=91.88 w_norm=8.835e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=51.8 c2=100.0 ba=83.92 w_norm=8.758e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=57.8 c2=100.0 ba=85.93 w_norm=8.775e0 max_abs_z=4.000e0
+[KSWEEP][K=128][roi][r=25] ba=99.92 forget=11.51 miss=0 drops=0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.960e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=67.9 c2=100.0 ba=89.31 w_norm=8.854e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=74.3 c2=100.0 ba=91.42 w_norm=8.789e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=75.6 c2=100.0 ba=91.88 w_norm=8.835e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=51.8 c2=100.0 ba=83.92 w_norm=8.758e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.972e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=57.8 c2=100.0 ba=85.93 w_norm=8.775e0 max_abs_z=4.000e0
+[KSWEEP][K=128][roi][r=50] ba=99.92 forget=11.51 miss=0 drops=0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[KSWEEP][K=128][roi][OFF] ba=99.92 forget=20.01
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.985e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=46.7 c2=100.0 ba=82.23 w_norm=8.774e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=49.7 c2=100.0 ba=83.24 w_norm=8.810e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.964e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=48.7 c2=100.0 ba=82.91 w_norm=8.776e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.979e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=73.3 c2=100.0 ba=91.10 w_norm=8.818e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=68.4 c2=100.0 ba=89.47 w_norm=8.769e0 max_abs_z=4.000e0
+[KSWEEP][K=128][dot][r=0] ba=99.92 forget=14.21 miss=0 drops=0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.985e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=46.7 c2=100.0 ba=82.23 w_norm=8.774e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=49.7 c2=100.0 ba=83.24 w_norm=8.810e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.964e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=48.7 c2=100.0 ba=82.91 w_norm=8.776e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.979e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=73.3 c2=100.0 ba=91.10 w_norm=8.818e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=128 val][RECALL_AFTER] c0=100.0 c1=68.4 c2=100.0 ba=89.47 w_norm=8.769e0 max_abs_z=4.000e0
+[KSWEEP][K=128][dot][r=25] ba=99.92 forget=14.21 miss=0 drops=0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.985e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=46.7 c2=100.0 ba=82.23 w_norm=8.774e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.966e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=49.7 c2=100.0 ba=83.24 w_norm=8.810e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.964e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=48.7 c2=100.0 ba=82.91 w_norm=8.776e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.979e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=73.3 c2=100.0 ba=91.10 w_norm=8.818e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.978e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=64 K=128 val][RECALL_AFTER] c0=100.0 c1=68.4 c2=100.0 ba=89.47 w_norm=8.769e0 max_abs_z=4.000e0
+[KSWEEP][K=128][dot][r=50] ba=99.92 forget=14.21 miss=0 drops=0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=128 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[KSWEEP][K=128][dot][OFF] ba=99.91 forget=18.97
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.973e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=39.3 c2=100.0 ba=79.76 w_norm=8.708e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=35.6 c2=100.0 ba=78.53 w_norm=8.705e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.976e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=42.1 c2=100.0 ba=80.70 w_norm=8.754e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=44.7 c2=100.0 ba=81.58 w_norm=8.742e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.961e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=53.2 c2=100.0 ba=84.41 w_norm=8.759e0 max_abs_z=4.000e0
+[KSWEEP][K=64][roi][r=0] ba=99.93 forget=19.01 miss=0 drops=0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.973e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=39.3 c2=100.0 ba=79.76 w_norm=8.708e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=35.6 c2=100.0 ba=78.53 w_norm=8.705e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.976e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=42.1 c2=100.0 ba=80.70 w_norm=8.754e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=44.7 c2=100.0 ba=81.58 w_norm=8.742e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.961e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=53.2 c2=100.0 ba=84.41 w_norm=8.759e0 max_abs_z=4.000e0
+[KSWEEP][K=64][roi][r=25] ba=99.93 forget=19.01 miss=0 drops=0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.973e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=39.3 c2=100.0 ba=79.76 w_norm=8.708e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=35.6 c2=100.0 ba=78.53 w_norm=8.705e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.976e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=42.1 c2=100.0 ba=80.70 w_norm=8.754e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.971e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=44.7 c2=100.0 ba=81.58 w_norm=8.742e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.961e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=53.2 c2=100.0 ba=84.41 w_norm=8.759e0 max_abs_z=4.000e0
+[KSWEEP][K=64][roi][r=50] ba=99.93 forget=19.01 miss=0 drops=0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[KSWEEP][K=64][roi][OFF] ba=99.92 forget=20.01
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=36.8 c2=100.0 ba=78.95 w_norm=8.730e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=42.2 c2=100.0 ba=80.73 w_norm=8.707e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=55.6 c2=100.0 ba=85.19 w_norm=8.748e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=8.726e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=46.6 c2=100.0 ba=82.20 w_norm=8.753e0 max_abs_z=4.000e0
+[KSWEEP][K=64][dot][r=0] ba=99.92 forget=18.38 miss=0 drops=0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=36.8 c2=100.0 ba=78.95 w_norm=8.730e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=42.2 c2=100.0 ba=80.73 w_norm=8.707e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=55.6 c2=100.0 ba=85.19 w_norm=8.748e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=8.726e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=64 val][RECALL_AFTER] c0=100.0 c1=46.6 c2=100.0 ba=82.20 w_norm=8.753e0 max_abs_z=4.000e0
+[KSWEEP][K=64][dot][r=25] ba=99.92 forget=18.38 miss=0 drops=0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=36.8 c2=100.0 ba=78.95 w_norm=8.730e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=42.2 c2=100.0 ba=80.73 w_norm=8.707e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.965e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=55.6 c2=100.0 ba=85.19 w_norm=8.748e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.967e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=8.726e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=32 K=64 val][RECALL_AFTER] c0=100.0 c1=46.6 c2=100.0 ba=82.20 w_norm=8.753e0 max_abs_z=4.000e0
+[KSWEEP][K=64][dot][r=50] ba=99.92 forget=18.38 miss=0 drops=0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=64 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[KSWEEP][K=64][dot][OFF] ba=99.91 forget=18.97
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=34.8 c2=100.0 ba=78.27 w_norm=8.704e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=31.4 c2=100.0 ba=77.13 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.969e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.738e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=30.6 c2=100.0 ba=76.87 w_norm=8.680e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=48.1 c2=100.0 ba=82.68 w_norm=8.735e0 max_abs_z=4.000e0
+[KSWEEP][K=32][roi][r=0] ba=99.92 forget=20.31 miss=0 drops=0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=34.8 c2=100.0 ba=78.27 w_norm=8.704e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=31.4 c2=100.0 ba=77.13 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.969e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.738e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=30.6 c2=100.0 ba=76.87 w_norm=8.680e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=48.1 c2=100.0 ba=82.68 w_norm=8.735e0 max_abs_z=4.000e0
+[KSWEEP][K=32][roi][r=25] ba=99.92 forget=20.31 miss=0 drops=0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.955e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=34.8 c2=100.0 ba=78.27 w_norm=8.704e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.977e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=31.4 c2=100.0 ba=77.13 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.969e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=50.5 c2=100.0 ba=83.50 w_norm=8.738e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=30.6 c2=100.0 ba=76.87 w_norm=8.680e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.962e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=48.1 c2=100.0 ba=82.68 w_norm=8.735e0 max_abs_z=4.000e0
+[KSWEEP][K=32][roi][r=50] ba=99.92 forget=20.31 miss=0 drops=0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[KSWEEP][K=32][roi][OFF] ba=99.92 forget=20.01
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.957e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=39.1 c2=100.0 ba=79.69 w_norm=8.657e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.956e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=47.7 c2=100.0 ba=82.55 w_norm=8.712e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=41.7 c2=100.0 ba=80.57 w_norm=8.745e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=47.3 c2=100.0 ba=82.42 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=50.1 c2=100.0 ba=83.37 w_norm=8.704e0 max_abs_z=4.000e0
+[KSWEEP][K=32][dot][r=0] ba=99.91 forget=18.28 miss=0 drops=0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.957e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=39.1 c2=100.0 ba=79.69 w_norm=8.657e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.956e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=47.7 c2=100.0 ba=82.55 w_norm=8.712e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=41.7 c2=100.0 ba=80.57 w_norm=8.745e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=47.3 c2=100.0 ba=82.42 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=32 val][RECALL_AFTER] c0=100.0 c1=50.1 c2=100.0 ba=83.37 w_norm=8.704e0 max_abs_z=4.000e0
+[KSWEEP][K=32][dot][r=25] ba=99.91 forget=18.28 miss=0 drops=0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.957e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=39.1 c2=100.0 ba=79.69 w_norm=8.657e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.956e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=47.7 c2=100.0 ba=82.55 w_norm=8.712e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=41.7 c2=100.0 ba=80.57 w_norm=8.745e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.958e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=47.3 c2=100.0 ba=82.42 w_norm=8.729e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.950e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=16 K=32 val][RECALL_AFTER] c0=100.0 c1=50.1 c2=100.0 ba=83.37 w_norm=8.704e0 max_abs_z=4.000e0
+[KSWEEP][K=32][dot][r=50] ba=99.91 forget=18.28 miss=0 drops=0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=32 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[KSWEEP][K=32][dot][OFF] ba=99.91 forget=18.97
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.945e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=45.3 c2=100.0 ba=81.77 w_norm=8.686e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.946e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=38.4 c2=100.0 ba=79.47 w_norm=8.709e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.931e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=36.0 c2=100.0 ba=78.65 w_norm=8.688e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.947e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=34.6 c2=100.0 ba=78.20 w_norm=8.674e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.944e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=29.9 c2=100.0 ba=76.64 w_norm=8.637e0 max_abs_z=4.000e0
+[KSWEEP][K=16][roi][r=0] ba=99.91 forget=21.05 miss=0 drops=0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.945e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=45.3 c2=100.0 ba=81.77 w_norm=8.686e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.946e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=38.4 c2=100.0 ba=79.47 w_norm=8.709e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.931e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=36.0 c2=100.0 ba=78.65 w_norm=8.688e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.947e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=34.6 c2=100.0 ba=78.20 w_norm=8.674e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.944e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=29.9 c2=100.0 ba=76.64 w_norm=8.637e0 max_abs_z=4.000e0
+[KSWEEP][K=16][roi][r=25] ba=99.91 forget=21.05 miss=0 drops=0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.945e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=45.3 c2=100.0 ba=81.77 w_norm=8.686e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.946e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=38.4 c2=100.0 ba=79.47 w_norm=8.709e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.931e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=36.0 c2=100.0 ba=78.65 w_norm=8.688e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.947e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=34.6 c2=100.0 ba=78.20 w_norm=8.674e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.944e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=29.9 c2=100.0 ba=76.64 w_norm=8.637e0 max_abs_z=4.000e0
+[KSWEEP][K=16][roi][r=50] ba=99.91 forget=21.05 miss=0 drops=0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][roi r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.0 c2=100.0 ba=79.99 w_norm=7.864e0 max_abs_z=4.000e0
+[KSWEEP][K=16][roi][OFF] ba=99.92 forget=20.01
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.935e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=40.4 c2=100.0 ba=80.12 w_norm=8.672e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.933e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=49.0 c2=100.0 ba=83.01 w_norm=8.675e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.936e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=37.6 c2=100.0 ba=79.21 w_norm=8.693e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.928e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=46.0 c2=100.0 ba=82.00 w_norm=8.693e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.931e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=47.2 c2=100.0 ba=82.39 w_norm=8.673e0 max_abs_z=4.000e0
+[KSWEEP][K=16][dot][r=0] ba=99.91 forget=18.65 miss=0 drops=0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.935e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=40.4 c2=100.0 ba=80.12 w_norm=8.672e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.933e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=49.0 c2=100.0 ba=83.01 w_norm=8.675e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.936e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=37.6 c2=100.0 ba=79.21 w_norm=8.693e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.928e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=46.0 c2=100.0 ba=82.00 w_norm=8.693e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.931e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=4 K=16 val][RECALL_AFTER] c0=100.0 c1=47.2 c2=100.0 ba=82.39 w_norm=8.673e0 max_abs_z=4.000e0
+[KSWEEP][K=16][dot][r=25] ba=99.91 forget=18.65 miss=0 drops=0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.799e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=29.3 c2=100.0 ba=76.45 w_norm=8.511e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.794e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=36.4 c2=100.0 ba=78.78 w_norm=8.548e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.801e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=33.4 c2=100.0 ba=77.81 w_norm=8.536e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.800e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=41.0 c2=100.0 ba=80.34 w_norm=8.544e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.802e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=8 K=16 val][RECALL_AFTER] c0=100.0 c1=33.1 c2=100.0 ba=77.71 w_norm=8.569e0 max_abs_z=4.000e0
+[KSWEEP][K=16][dot][r=50] ba=99.91 forget=21.78 miss=15005 drops=0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_BEFORE] c0=100.0 c1=100.0 c2=100.0 ba=100.00 w_norm=5.431e0 max_abs_z=4.000e0
+[TEST][TABLE][dot r=0 K=16 val][RECALL_AFTER] c0=100.0 c1=43.1 c2=100.0 ba=81.03 w_norm=7.878e0 max_abs_z=4.000e0
+[KSWEEP][K=16][dot][OFF] ba=99.91 forget=18.97
+[KSWEEP][DONE] ghi results/k_sweep.csv
+test k_sweep_pressure ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.00s
+

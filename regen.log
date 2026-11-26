@@ -1,0 +1,74 @@
+=== [T2a] Cach ly npz nhiem ===
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+=== [T2b] Test doc lap - phai exit 0 ===
+[TEST][LoaderFix][label_K001] expected=0 actual=0 PASS
+[TEST][LoaderFix][label_KI14] expected=1 actual=1 PASS
+[TEST][LoaderFix][label_KA16] expected=2 actual=2 PASS
+[TEST][LoaderFix][label_KB23] expected=3 actual=3 PASS
+[TEST][LoaderFix][parse_normal] expected=('N15_M07_F10', 13) actual=('N15_M07_F10', 13) PASS
+[TEST][LoaderFix][wincount_256000] expected=250 actual=250 PASS
+[TEST][LoaderFix][happy_keys] expected=['X', 'bearing', 'condition', 'record', 'win', 'y'] actual=['X', 'bearing', 'condition', 'record', 'win', 'y'] PASS
+[TEST][LoaderFix][happy_rows] expected=500 actual=500 PASS
+[TEST][LoaderFix][happy_labels] expected={0: 250, 1: 250} actual={0: 250, 1: 250} PASS
+[TEST][LoaderFix][happy_Xshape] expected=(500, 16) actual=(500, 16) PASS
+[TEST][LoaderFix][wincount_1024] expected=1 actual=1 PASS
+[TEST][LoaderFix][wincount_1023] expected=0 actual=0 PASS
+[TEST][LoaderFix][wincount_0] expected=0 actual=0 PASS
+[TEST][LoaderFix][parse_rec1] expected=('N09_M07_F10', 1) actual=('N09_M07_F10', 1) PASS
+[TEST][LoaderFix][parse_rec20] expected=('N15_M07_F10', 20) actual=('N15_M07_F10', 20) PASS
+[TEST][LoaderFix][edge_cond_filter_rows] expected=250 actual=250 PASS
+[TEST][LoaderFix][edge_cond_only] expected=['N15_M07_F10'] actual=['N15_M07_F10'] PASS
+[TEST][LoaderFix][edge_dead_signal_rows] expected=0 actual=0 PASS
+[TEST][LoaderFix][err_label_unknown] expected=None actual=None PASS
+[TEST][LoaderFix][err_parse_bad] expected=(None, None) actual=(None, None) PASS
+[TEST][LoaderFix][err_empty_keys] expected=['X', 'bearing', 'condition', 'record', 'win', 'y'] actual=['X', 'bearing', 'condition', 'record', 'win', 'y'] PASS
+[TEST][LoaderFix][err_empty_Xshape] expected=(0, 16) actual=(0, 16) PASS
+[TEST][LoaderFix][err_empty_rows] expected=0 actual=0 PASS
+[TEST][LoaderFix][SUMMARY] fails=0 []
+=== [T2d] Loader that - counts phai PASS ===
+[LOADER] nap PU_raw (khong download, raw da co san)...
+[LOADER] so file=2559 dieu_kien_loc=['N15_M07_F10', 'N09_M07_F10']
+[LOADER][train] rows=80117 expected=80117 PASS
+[LOADER][train] nhan={0: 30039, 1: 30074, 2: 20004} o=['K001', 'K002', 'K003', 'KA04', 'KA15', 'KI04', 'KI16', 'KI17']
+[LOADER][SAVE] /home/adminstrator/Work/Project_ESP32C5/pc/data/train.npz (6 khoa)
+[LOADER][val] rows=30046 expected=30046 PASS
+[LOADER][val] nhan={0: 10008, 1: 10031, 2: 10007} o=['K004', 'KA16', 'KI14']
+[LOADER][SAVE] /home/adminstrator/Work/Project_ESP32C5/pc/data/val.npz (6 khoa)
+[LOADER][test] rows=60111 expected=60111 PASS
+[LOADER][test] nhan={0: 20024, 1: 20030, 2: 20057} o=['K005', 'K006', 'KA22', 'KA30', 'KI18', 'KI21']
+[LOADER][SAVE] /home/adminstrator/Work/Project_ESP32C5/pc/data/test.npz (6 khoa)
+[LOADER][kb] rows=30040 expected=30040 PASS
+[LOADER][kb] nhan={3: 30040} o=['KB23', 'KB24', 'KB27']
+[LOADER][SAVE] /home/adminstrator/Work/Project_ESP32C5/pc/data/kb.npz (6 khoa)
+[LOADER][DONE] counts PASS
+=== [T3a] Val CSV -> fixtures_val (khong dung fixtures/) ===
+[CSVGEN][NORM] source=n15 rows=40061 mean_range=[-14.7629,14954.6] std_range=[0.0289445,11877.3]
+[CSVGEN][SCALE] ghi fixtures_val/feature_scales.csv: min=0.0314961 max=0.0314961
+[CSVGEN][NORMFILE] ghi fixtures_val/feature_norm.csv (dim,mean,std)
+[CSVGEN][WINSOR] N15_M07_F10: 4638/240512 gia tri bi cat (1.928%)
+[CSVGEN][WINSOR] N09_M07_F10: 8655/240224 gia tri bi cat (3.603%)
+[CSVGEN][ORDER] blocks=27002 (ky vong >> 12 neu xen ke o) first12=[('K004', 0), ('KA16', 2), ('KI14', 1), ('K004', 0), ('KA16', 2), ('KI14', 1), ('K004', 0), ('KA16', 2), ('KI14', 1), ('K004', 0), ('KA16', 2), ('KI14', 1)]
+[CSVGEN][CLIP] round_clip expected=0 actual=0 (winsor=13293 gia tri, hanh vi dung cua D7)
+[CSVGEN][COUNT] in=30046 kb_loai=0 out=30046 reserve_N15_17_20=3026 N15_stream=12006 N09=15014
+[CSVGEN][DONE] fixtures_val/features_val.csv: 30046 dong PASS
+[GATE] norm phai 97f6b903..., scales phai 724a2b9d...
+97f6b9036497144d29648c4e05111b3a9d790315e86535f43caa399c2ca1ad86  fixtures_val/feature_norm.csv
+724a2b9d07205c1209313b71a718e9013250ea2d8295caae1418f36a333f814f  fixtures_val/feature_scales.csv
+=== [T3b] Parity test ra /tmp - khong de fixtures ===
+[CSVGEN][NORM] source=n15 rows=40061 mean_range=[-14.7629,14954.6] std_range=[0.0289445,11877.3]
+[CSVGEN][SCALE] ghi /tmp/parity_scales.csv: min=0.0314961 max=0.0314961
+[CSVGEN][NORMFILE] ghi /tmp/parity_norm.csv (dim,mean,std)
+[CSVGEN][WINSOR] N15_M07_F10: 497/480672 gia tri bi cat (0.103%)
+[CSVGEN][WINSOR] N09_M07_F10: 15881/481104 gia tri bi cat (3.301%)
+[CSVGEN][ORDER] blocks=54020 (ky vong >> 12 neu xen ke o) first12=[('K005', 0), ('K006', 0), ('KA22', 2), ('KA30', 2), ('KI18', 1), ('KI21', 1), ('K005', 0), ('K006', 0), ('KA22', 2), ('KA30', 2), ('KI18', 1), ('KI21', 1)]
+[CSVGEN][CLIP] round_clip expected=0 actual=0 (winsor=16378 gia tri, hanh vi dung cua D7)
+[CSVGEN][COUNT] in=60111 kb_loai=0 out=60111 reserve_N15_17_20=6022 N15_stream=24020 N09=30069
+[CSVGEN][DONE] /tmp/parity_test.csv: 60111 dong PASS
+[GATE] parity_test phai 3c8550f0...
+3c8550f0c46d5f393643c52d5ba600d260a967e56a61f4d25f8814d52e43bacd  /tmp/parity_test.csv
+fixtures/features_paderborn.csv: OK
+fixtures/feature_scales.csv: OK
+=== [T4] Regression roi protocol_val ===
+error: Permission denied (os error 13) at path "/mnt/data/fwtargetl5VNEv"
+error: Permission denied (os error 13) at path "/mnt/data/fwtargetGj9ZWw"
+[DONE] toan bo cong PASS

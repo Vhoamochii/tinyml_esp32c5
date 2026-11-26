@@ -1,0 +1,10 @@
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/somni-parser/ed49e3a5a272e081/out/somni_parser-ed49e3a5a272e081.d: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/ast.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lexer.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/parser.rs
+
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/somni-parser/ed49e3a5a272e081/out/libsomni_parser-ed49e3a5a272e081.rlib: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/ast.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lexer.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/parser.rs
+
+/home/adminstrator/Work/Project_ESP32C5/target_pc/debug/build/somni-parser/ed49e3a5a272e081/out/libsomni_parser-ed49e3a5a272e081.rmeta: /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lib.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/ast.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lexer.rs /home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/parser.rs
+
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lib.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/ast.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/lexer.rs:
+/home/adminstrator/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/somni-parser-0.3.1/src/parser.rs:
